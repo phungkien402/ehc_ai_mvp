@@ -1,0 +1,108 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1e3a5f', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a1f3a', 'lineColor': '#4a90d9', 'fontFamily': 'Segoe UI, Arial, sans-serif', 'fontSize': '16px'}}}%%
+flowchart LR
+
+    U["👤 Nhân viên IT"]
+
+    subgraph BOT["🤖 Telegram Bot"]
+        B1["Long Polling"]
+        B2["Image cache 5'"]
+    end
+
+    subgraph GATEWAY["🔌 FastAPI Gateway :8000"]
+        G1["POST /api/v1/ask"]
+        G2["Session Memory\nTTL 2h · 2000 sessions"]
+        G3["Health / Dashboard API"]
+    end
+
+    subgraph UI["📊 Dashboard UI  :8000/ui\n(React + Vite)"]
+        UI1["Overview"]
+        UI2["Live Logs"]
+        UI3["Workflow"]
+        UI4["Vision Test"]
+    end
+
+    subgraph AGENT["🧠 LangGraph Self-RAG"]
+        direction TB
+        A1["extract_ocr_if_image\n→ TEXT · ISSUE · UI"]
+        A2["agent · call_agent"]
+        A3["tools · search_faq_tool"]
+        A4["grade_documents\nLLM + heuristic"]
+        A5["rewrite_query  ↑ loop"]
+        A6["generate_final_answer\nambiguity · fallback"]
+        A1 --> A2 --> A3 --> A4
+        A4 -->|relevant| A6
+        A4 -->|rewrite| A5 --> A2
+        A2 -->|direct| A6
+    end
+
+    subgraph MODELS["⚙️ Ollama  (SSH Tunnel :11435)"]
+        M1["qwen2.5:14b\nLLM · grader · rewrite"]
+        M2["qwen2.5vl:7b\nVision / OCR"]
+        M3["bge-m3:latest\nEmbeddings 1024d"]
+    end
+
+    subgraph GPU["🖥️ GPU Server  n3.ckey.vn:1534"]
+        GP["RTX 3090 24GB\nOllama v0.19.0"]
+    end
+
+    subgraph VECTOR["🗄️ Qdrant :6333"]
+        Q1["ehc_faq\ncosine · 1024-dim"]
+    end
+
+    subgraph INGEST["📥 Ingestion Pipeline\n(chạy thủ công / cron)"]
+        direction TB
+        I1["Redmine API\n100 issues/page"]
+        I2["FAQChunker\n500 chars · overlap 100"]
+        I3["OllamaEmbeddings\nbatch 10"]
+        I4["QdrantWriter · upsert"]
+        I1 --> I2 --> I3 --> I4
+    end
+
+    REDMINE["📋 Redmine\nco.ehc.vn:81\n(ticket database)"]
+
+    %% Main flow
+    U <-->|Telegram| B1
+    B1 <-->|HTTP| G1
+    G1 <--> AGENT
+    UI1 & UI2 & UI3 & UI4 <-->|REST / WS| GATEWAY
+
+    %% Agent ↔ Models
+    A1 -->|OCR| M2
+    A2 & A4 & A5 -->|LLM| M1
+    A3 -->|embed| M3
+    A3 <-->|search| Q1
+
+    %% Models ↔ GPU
+    MODELS <-.->|SSH Tunnel| GP
+
+    %% Ingestion
+    REDMINE -->|REST API| I1
+    I3 -->|embed| M3
+    I4 -->|upsert| Q1
+
+    %% Health
+    G3 -.->|health| Q1
+    G3 -.->|health| MODELS
+
+    %% Styles
+    classDef userCls fill:#1a3a5c,stroke:#0d2340,color:#fff
+    classDef botCls fill:#1e5f74,stroke:#103d4e,color:#fff
+    classDef gatewayCls fill:#2a4858,stroke:#162430,color:#fff
+    classDef uiCls fill:#1b4332,stroke:#0d2218,color:#fff
+    classDef agentCls fill:#1d3557,stroke:#0a1f3a,color:#fff
+    classDef modelCls fill:#6a1f7a,stroke:#4a155a,color:#fff
+    classDef gpuCls fill:#922b21,stroke:#6b1f18,color:#fff
+    classDef vectorCls fill:#7d6608,stroke:#5c4c06,color:#fff
+    classDef ingestCls fill:#154360,stroke:#0e2d40,color:#fff
+    classDef redmineCls fill:#4a235a,stroke:#2e1638,color:#fff
+
+    class U userCls
+    class B1,B2 botCls
+    class G1,G2,G3 gatewayCls
+    class UI1,UI2,UI3,UI4 uiCls
+    class A1,A2,A3,A4,A5,A6 agentCls
+    class M1,M2,M3 modelCls
+    class GP gpuCls
+    class Q1 vectorCls
+    class I1,I2,I3,I4 ingestCls
+    class REDMINE redmineCls
