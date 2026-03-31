@@ -1,0 +1,91 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1e3a5f', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a1f3a', 'lineColor': '#5b9bd5', 'fontFamily': 'Segoe UI, Arial, sans-serif', 'fontSize': '15px'}}}%%
+flowchart TD
+
+    USER["👤 Nhân viên IT\n30–50 user đồng thời"]
+
+    subgraph CLIENT["MODULE 1 — Giao diện người dùng"]
+        direction LR
+        BOT["🤖 Telegram Bot\nasync, không giới hạn kết nối"]
+        UI["📊 Dashboard Web :8000/ui\nReact SPA"]
+    end
+
+    subgraph GW["MODULE 2 — API Gateway  :8000  (FastAPI · Uvicorn 4 workers)"]
+        direction LR
+        GW_ROUTE["🔌 Router\nPOST /ask\nGET  /health\nWS   /logs"]
+        GW_MEM["💾 Redis Session Store\nTTL 2h · shared across workers\n✅ Không mất session khi restart"]
+    end
+
+    subgraph QUEUE["MODULE 3 — Task Queue  (Celery + Redis)"]
+        direction LR
+        REDIS["🔴 Redis  :6379\nMessage broker\nTask queue\nResult backend"]
+        CELERY["⚙️ Celery Workers  ×4\nMỗi worker xử lý 1 agent request\n→ 4 request song song\nAuto-retry khi timeout"]
+    end
+
+    subgraph AGENT["MODULE 4 — Agent Runtime  (LangGraph Self-RAG)"]
+        direction LR
+        AG_OCR["🖼️ Vision / OCR\nqwen2.5vl:7b\n~2–4s/ảnh"]
+        AG_RAG["🧠 Self-RAG Engine\ngrade, rewrite, generate\n~2–5s/câu hỏi\n✅ Chạy song song qua Celery"]
+    end
+
+    subgraph VECTOR["MODULE 5 — Qdrant Vector DB  :6333"]
+        QD["🗄️ Collection: ehc_faq\nCosine · 1024-dim\n✅ ~50ms/query · không bottleneck"]
+    end
+
+    subgraph GPU["MODULE 6 — GPU Cluster  (2× Tesla V100 32GB)"]
+        direction LR
+        subgraph V1["V100 #1  — LLM chính"]
+            VLLM1["🚀 vLLM  :8000\nqwen2.5:7b\nContinuous batching\n8–16 request song song\n~2–4s/câu\n✅ BOTTLENECK ĐÃ GIẢI"]
+        end
+        subgraph V2["V100 #2  — Vision + Embedding"]
+            VLLM2["🚀 vLLM  :8001\nqwen2.5vl:7b  (OCR)\n+ sentence-transformers\nbge-m3 embedding\n~2–4s/ảnh"]
+        end
+    end
+
+    subgraph INGEST["MODULE 7 — Ingestion Pipeline  (Offline / Cron)"]
+        ING["📥 Redmine → Qdrant\nCrawl · Chunk · Embed · Upsert\nKhông ảnh hưởng realtime"]
+    end
+
+    REDMINE["📋 Redmine  co.ehc.vn:81"]
+
+    CAPACITY["📊 ƯỚC TÍNH TẢI — SCALED\n──────────────────────────────────────\n🟢  1–15 user  →  mượt, ~2–5s/câu\n🟡  16–35 user  →  queue nhẹ, ~4–8s/câu\n🟢  36–50 user  →  ổn định với vLLM batch\n──────────────────────────────────────\nThroughput: ~80–120 req/phút\nBottleneck cũ (GPU đơn) → ĐÃ GIẢI bằng vLLM\nBottleneck mới (nếu có): Network / Qdrant I/O"]
+
+    USER -->|Telegram| BOT
+    USER -->|Browser| UI
+    BOT -->|HTTP /ask| GW_ROUTE
+    UI -->|REST / WS| GW_ROUTE
+    GW_ROUTE <-->|session R/W| GW_MEM
+    GW_MEM --- REDIS
+    GW_ROUTE -->|enqueue task| REDIS
+    REDIS --> CELERY
+    CELERY --> AG_RAG
+    CELERY --> AG_OCR
+    AG_RAG -->|embed + search| QD
+    AG_RAG -->|LLM generate\ngrade · rewrite| VLLM1
+    AG_OCR -->|Vision LLM| VLLM2
+    ING -->|embed| VLLM2
+    ING -->|upsert| QD
+    ING -->|REST| REDMINE
+    VLLM1 -.-> CAPACITY
+    VLLM2 -.-> CAPACITY
+
+    classDef userCls fill:#1a3a5c,stroke:#0d2340,color:#fff
+    classDef clientCls fill:#1e5f74,stroke:#0e3444,color:#fff
+    classDef gwCls fill:#154360,stroke:#0e2d40,color:#fff
+    classDef queueCls fill:#5d3a1a,stroke:#3e2710,color:#fff
+    classDef agCls fill:#1d3557,stroke:#0a1f3a,color:#fff
+    classDef vectorCls fill:#7d6608,stroke:#5c4c06,color:#fff
+    classDef gpuCls fill:#1b5e20,stroke:#0d3510,color:#fff
+    classDef pipelineCls fill:#1b4332,stroke:#0d2218,color:#fff
+    classDef redmineCls fill:#4a235a,stroke:#2e1638,color:#fff
+    classDef capacityCls fill:#1a1a2e,stroke:#4caf50,color:#f0f0f0
+
+    class USER userCls
+    class BOT,UI clientCls
+    class GW_ROUTE,GW_MEM gwCls
+    class REDIS,CELERY queueCls
+    class AG_OCR,AG_RAG agCls
+    class QD vectorCls
+    class VLLM1,VLLM2 gpuCls
+    class ING pipelineCls
+    class REDMINE redmineCls
+    class CAPACITY capacityCls
