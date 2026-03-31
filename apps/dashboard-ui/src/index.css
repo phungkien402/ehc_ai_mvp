@@ -1,0 +1,369 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  --bg: #f2f7f9;
+  --surface: #ffffff;
+  --ink: #0f1b24;
+  --muted: #4b5f70;
+  --line: #d5e3eb;
+  --brand: #0f766e;
+  --brand-soft: #d7f4f1;
+  --warn: #b45309;
+  --ok: #166534;
+  --danger: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, #daf6ff 0%, transparent 37%),
+    radial-gradient(circle at bottom left, #e9f9df 0%, transparent 42%),
+    var(--bg);
+}
+
+.dashboard-shell {
+  width: min(1360px, 100% - 2rem);
+  margin: 1rem auto 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  background: linear-gradient(135deg, #0f766e, #164e63);
+  color: #f8fdfc;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 16px 36px rgba(5, 27, 38, 0.2);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 2rem);
+}
+
+.dashboard-header p {
+  margin: 0.35rem 0 0;
+  color: #d4eceb;
+}
+
+.status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pill.ok {
+  background: #dcfce7;
+  color: var(--ok);
+}
+
+.pill.warn {
+  background: #ffedd5;
+  color: var(--warn);
+}
+
+.pill.neutral {
+  background: rgba(255, 255, 255, 0.2);
+  color: #f8fdfc;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tab {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.tab.active {
+  color: #083631;
+  border-color: #76cfbf;
+  background: var(--brand-soft);
+}
+
+.panel-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 6px 12px rgba(26, 41, 56, 0.08);
+}
+
+.panel h2 {
+  margin: 0 0 0.75rem;
+}
+
+.stats-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.7rem;
+}
+
+.stats-list dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.stats-list dd {
+  margin: 0.3rem 0 0;
+  font-weight: 700;
+}
+
+.model-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.model-list li {
+  margin-bottom: 0.35rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.92rem;
+}
+
+.logs-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+}
+
+button {
+  border: 1px solid #8ad3c6;
+  border-radius: 8px;
+  background: #e6faf6;
+  color: #0f4f46;
+  padding: 0.4rem 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logs-table-wrap {
+  max-height: 62vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.logs-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #edf7fb;
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.logs-table tbody td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: top;
+}
+
+.logs-table tbody td:nth-child(1),
+.logs-table tbody td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.level-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #e2e8f0;
+}
+
+.level-badge.INFO {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.level-badge.WARNING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.level-badge.ERROR {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.workflow-panel {
+  overflow: hidden;
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.workflow-canvas {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.65rem;
+}
+
+.workflow-canvas svg {
+  width: max-content;
+  min-width: 100%;
+}
+
+.workflow-active-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.workflow-active-badge.ok {
+  color: #14532d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.workflow-timeline {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fcff;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.workflow-timeline-item {
+  display: grid;
+  grid-template-columns: 180px 180px 1fr;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #e5eef4;
+  font-size: 0.88rem;
+}
+
+.workflow-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.workflow-timeline-time {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.workflow-timeline-node {
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  color: #155e75;
+}
+
+.workflow-timeline-msg {
+  color: #1f2937;
+}
+
+.error-text {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .dashboard-shell {
+    width: calc(100% - 1rem);
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+  }
+
+  .logs-table-wrap {
+    max-height: 55vh;
+  }
+
+  .workflow-timeline-item {
+    grid-template-columns: 1fr;
+  }
+}

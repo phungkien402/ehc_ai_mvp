@@ -1,0 +1,1168 @@
+{
+  "generated_at": "2026-03-30T07:55:25.353794+00:00",
+  "project": "ehcfaq",
+  "total_cases": 118,
+  "cases": [
+    {
+      "case_id": "ticket_38996",
+      "query": "Cho mình hỏi xem tồn kho thuốc ở đâu được không?",
+      "expected_issue_id": "38996",
+      "reference_answer": "Xem tồn kho thuốc ở đâu?\n\nModule Điều trị => menu => dược lầm sàng => xem tồn kho thuốc",
+      "subject": "Xem tồn kho thuốc ở đâu?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/38996",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/28765/tonkhothuoc.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_38766",
+      "query": "Cho mình hỏi lỗi phiếu điều trị có thời gian sau thời gian xử trí được không?",
+      "expected_issue_id": "38766",
+      "reference_answer": "Lỗi phiếu điều trị có thời gian sau thời gian xử trí\n\nNguyên nhân: Lỗi này do bác sĩ kê thời gian y lệnh của phiếu điều trị đang quá thời gian xử trí.\nHướng giải quyết: Kiểm tra và sửa lại giờ y lệch của phiếu điều trị trong bệnh án hoặc thời gian xử trí bệnh nhân sao cho thời gian xử trí phải sau thời gian y lệnh và hợp lý.",
+      "subject": "Lỗi phiếu điều trị có thời gian sau thời gian xử trí",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/38766",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_38765",
+      "query": "Cho mình hỏi lỗi phiếu chuyên khoa có ngày y lệnh lớn hơn thời gian bắt đầu và kết thúc dịch vụ được không?",
+      "expected_issue_id": "38765",
+      "reference_answer": "Lỗi phiếu chuyên khoa có ngày y lệnh lớn hơn thời gian bắt đầu và kết thúc dịch vụ\n\nNguyên nhân: Lỗi này thường do người chỉ định chọn giờ ngày thực hiện sau giờ y lệnh hoặc ngược lại.\nHướng giải quyết: Kiểm tra và sửa lại giờ y lệch hoặc thời gian bắt đầu/kết thúc của dịch vụ CHUYÊN KHOA có mã phiếu đó.",
+      "subject": "Lỗi phiếu chuyên khoa có ngày y lệnh lớn hơn thời gian bắt đầu và kết thúc dịch vụ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/38765",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_38414",
+      "query": "Cho mình hỏi xem báo cáo số lượng bệnh nhân thực hiện tại phòng xét nghiệm như nào được không?",
+      "expected_issue_id": "38414",
+      "reference_answer": "xem báo cáo số lượng bệnh nhân thực hiện tại phòng xét nghiệm như nào?\n\nModule xét nghiệm --> chọn in --> báo cáo số lượng thực hiện dịch vụ theo phòng thực hiện --> Cấu hình bộ lọc theo nhu cầu.",
+      "subject": "xem báo cáo số lượng bệnh nhân thực hiện tại phòng xét nghiệm như nào?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/38414",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/28592/locbenhnhantheophongXN.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_37621",
+      "query": "Cho mình hỏi lỗi khi nhập mô tả kết quả cđha phần mềm thông báo the file exists được không?",
+      "expected_issue_id": "37621",
+      "reference_answer": "Lỗi khi nhập mô tả kết quả CĐHA phần mềm thông báo The file exists\n\nLỗi khi nhập mô tả kết quả CĐHA phần mềm thông báo The file exists\n\n*Nguyên nhân:*\nDo File tạm cũ chưa được xóa\n\n*Cách xử lý:*\n1. Tắt hết phần mềm đang mở\n2. Nhấn tổ hợp phím Window + R\n3. Nhập\n<pre>\n %temp%\n</pre>\n4. Xoá hết file có trong thư mục Temp\n5. Mở phần mềm vào thao tác lại là được",
+      "subject": "Lỗi khi nhập mô tả kết quả CĐHA phần mềm thông báo The file exists",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/37621",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_34995",
+      "query": "Tại sao bác sĩ không Xác nhận được nội dung đã nhập trong phiếu Khám sức khoẻ?",
+      "expected_issue_id": "34995",
+      "reference_answer": "Tại sao bác sĩ không Xác nhận được nội dung đã nhập trong phiếu Khám sức khoẻ?\n\nHiện tại trong phân quyền người dùng có 2 quyền liên quan đến phiếu khám sức khoẻ:\n\n1. Cho phép thêm/xoá phiếu khám sức khoẻ (1)\n2. Cho phép nhập thông tin Khám sức khoẻ lái xe (2)\n\n--> Loại tài khoản Bác sĩ thì chỉ cần phân quyền (1)\n--> Quyền (2) dành cho loại tài khoản Điều dưỡng (<> Bác si) --> nếu phân thêm quyền (2) cho loại tài khoản Bác sĩ thì sẽ không Xác nhận được thông tin.",
+      "subject": "Tại sao bác sĩ không Xác nhận được nội dung đã nhập trong phiếu Khám sức khoẻ?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/34995",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/27618/Ph%C3%A2n%20quy%E1%BB%81n%20KSK.png"
+      ]
+    },
+    {
+      "case_id": "ticket_23799",
+      "query": "Cho mình hỏi lỗi thanh toán qr động thường do những nguyên nhân nảo được không?",
+      "expected_issue_id": "23799",
+      "reference_answer": "Lỗi thanh toán QR động thường do những nguyên nhân nảo?\n\nLỗi thanh toán QR thường do các nguyên nhân:\n1. Lỗi phía ngân hàng\n2. Đường mạng trục trặc nên bank không gọi được API gạch nợ của HIS\n3. Webserver của HIS bị trục trặc nên bank ko gọi được API gạch nợ của HIS _(trên lý thuyết thì khi update phần mềm his sẽ ko ảnh hưởng đến api đang hoạt động)_. Vấn đề này có thể tách riêng máy chủ ảo chỉ chạy riêng service này thì sẽ dễ theo dõi lỗi/tăng sự ổn định\n\n_//khi bị lỗi thì CNTT có thể tự test (bằng cách tự gọi API gạch nợ), nếu ko gọi đc API thì lỗi đường truyền/HIS. Nếu gọi được mà giao dịch vẫn lỗi thì lỗi phía bank._",
+      "subject": "Lỗi thanh toán QR động thường do những nguyên nhân nảo?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/23799",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_23798",
+      "query": "Cho mình hỏi việc bỏ thời gian thực trên mẫu chữ ký điện tử có phù hợp với quy định hiện hành không được không?",
+      "expected_issue_id": "23798",
+      "reference_answer": "Việc bỏ thời gian thực trên mẫu chữ ký điện tử có phù hợp với quy định hiện hành không?\n\nĐến thời điểm tháng 7.2025 chưa có quy định rõ ràng:\n1. Nếu dùng chữ ký số: bắt buộc phải hiện giờ ký ở phần chữ ký\n2. Nếu dùng chữ ký điện tử theo luật giao dịch điện tử 2023: hiện ko có quy định bắt buộc phải hiện giờ ký ở phần chữ ký. Có đơn vị cho hiện giờ và có đơn vị ẩn giờ\n\nNếu \"ẩn giờ\" thì sẽ dễ làm, dễ vận hành badt hơn cho khoa phòng. Tuy nhiên việc ẩn này chỉ là ẩn hình thức bên ngoài, còn nếu công an/thanh tra vào kiểm tra hệ thống (các log, dữ liệu trong hệ thống) thì vẫn phát hiện ra được giờ ký (trừ trường hợp can thiệp trực tiếp máy chủ để sửa giờ",
+      "subject": "Việc bỏ thời gian thực trên mẫu chữ ký điện tử có phù hợp với quy định hiện hành không?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/23798",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19444",
+      "query": "Tại sao hệ thống không cho sửa các nội dung trong vỏ bệnh án?",
+      "expected_issue_id": "19444",
+      "reference_answer": "Tại sao hệ thống không cho sửa các nội dung trong vỏ bệnh án\n\nVì trong BADT các tài liệu vỏ bệnh án đó đã được ký xác nhận rồi\n--> Phải hủy ký mới được sủa lại nội dung trong tài liệu",
+      "subject": "Tại sao hệ thống không cho sửa các nội dung trong vỏ bệnh án ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19444",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21689/z6606240944947_3d2ffddee27f6c9d30699396d2339209.jpg",
+        "http://co.ehc.vn:81/redmine/attachments/download/21690/z6606241250738_be1235406638990423db0fcd7f9aef9f.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19288",
+      "query": "Cho mình hỏi để xem ảnh ct và xq, siêu âm pacs thao tác như nào được không?",
+      "expected_issue_id": "19288",
+      "reference_answer": "để xem ảnh CT và XQ, siêu âm pacs thao tác như nào\n\nvào module CĐHA và thăm dò chức năng --> chọn bệnh nhân --> chuột phải vào dịch vụ --> hiện bảng trong đó có xem ảnh",
+      "subject": "để xem ảnh CT và XQ, siêu âm pacs thao tác như nào",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19288",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21645/huong%20dan%20xem.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19274",
+      "query": "Hướng dẫn chuyển phòng cho BN?",
+      "expected_issue_id": "19274",
+      "reference_answer": "Hướng dẫn chuyển phòng cho BN\n\nVào module Hành chính --> Chọn BN cần chuyển phòng --> Chọn \"Chuyển phòng\" trên thanh menu --> Điền đầy đủ thông tin trên cửa sổ hiển thị --> Lưu",
+      "subject": "Hướng dẫn chuyển phòng cho BN",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19274",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19273",
+      "query": "Cho mình hỏi in bảng y lệnh vật tư hàng ngày như nào được không?",
+      "expected_issue_id": "19273",
+      "reference_answer": "In bảng y lệnh vật tư hàng ngày như nào?\n\nVào module Hành chính --> Chọn \"In\" trên thanh menu --> Chọn \"bảng y lệnh thuốc hàng ngày\" --> Chọn khoa --> Chọn thời gian và buồng điều trị --> Chọn mục \"Vật tư\" --> OK --> IN",
+      "subject": "In bảng y lệnh vật tư hàng ngày như nào?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19273",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19272",
+      "query": "Cho mình hỏi in bảng y lệnh thuốc hàng ngày được không?",
+      "expected_issue_id": "19272",
+      "reference_answer": "In bảng y lệnh thuốc hàng ngày\n\nVào module Hành chính --> Chọn \"In\" trên thanh menu --> Chọn \"bảng y lệnh thuốc hàng ngày\" --> Chọn khoa --> Chọn thời gian và buồng điều trị --> Chọn mục \"Thuốc\" --> OK --> IN",
+      "subject": "In bảng y lệnh thuốc hàng ngày",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19272",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/28477/in%20b%E1%BA%A3ng%20y%20l%E1%BB%87nh%20thu%E1%BB%91c%20h%C3%A0ng%20ng%C3%A0y.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19248",
+      "query": "Cho mình hỏi in sổ lưu kết quả chẩn đoán hình ảnh được không?",
+      "expected_issue_id": "19248",
+      "reference_answer": "In sổ lưu kết quả chẩn đoán hình ảnh\n\nVào Module CDHA và Thăm dò chức năng --> Chọn \"In\" trên thanh menu --> Chọn \"Sổ lưu kết quả chẩn đoán hình ảnh\" --> Lọc thời gian cần lấy kết quả, OK --> IN",
+      "subject": "In sổ lưu kết quả chẩn đoán hình ảnh",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19248",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19247",
+      "query": "Cho mình hỏi thống kê danh sách bệnh nhân phẫu thuật thủ thuật được không?",
+      "expected_issue_id": "19247",
+      "reference_answer": "Thống kê danh sách bệnh nhân phẫu thuật thủ thuật\n\nVào module CDHA và Thăm dò chức năng --> Chọn \"In\" trên thanh menu --> Chọn \"Sổ dịch vụ thủ thuật Cdha\" --> Lọc thời gian lấy thống kê, OK --> IN",
+      "subject": "Thống kê danh sách bệnh nhân phẫu thuật thủ thuật",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19247",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19235",
+      "query": "Cách sửa chấn đoán bệnh khám bệnh?",
+      "expected_issue_id": "19235",
+      "reference_answer": "Cách sửa chấn đoán bệnh khám bệnh\n\nVào module Khám bệnh--> Chuột phải vào tên bệnh nhân --> Sửa thông tin /Bổ sung thông tin --> Sửa chẩn đoán",
+      "subject": "Cách sửa chấn đoán bệnh khám bệnh",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19235",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21633/suachandoan.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19229",
+      "query": "tại sao phòng khám mới 18 bệnh nhân mà số thứ tự đi xét nghiệm là 250?",
+      "expected_issue_id": "19229",
+      "reference_answer": "tại sao phòng khám mới 18 bệnh nhân mà số thứ tự đi xét nghiệm là 250\n\nPhòng xét nghiệm tiếp nhận cả ngoại trú và ngoại trú nên số thứ tự được đẩy lên",
+      "subject": "tại sao phòng khám mới 18 bệnh nhân mà số thứ tự đi xét nghiệm là 250 ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19229",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19182",
+      "query": "Cho mình hỏi làm thế nào để nhập thông tin tai nạn thương tích được không?",
+      "expected_issue_id": "19182",
+      "reference_answer": "Làm thế nào để nhập thông tin tai nạn thương tích\n\nVào module khám bệnh -> click 2 lần vào bệnh nhân -> chọn thông tin tai nạn thương tích -> nhập thông tin -> chọn lưu là được ạ.",
+      "subject": "Làm thế nào để nhập thông tin tai nạn thương tích",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19182",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21623/th%C3%B4ng%20tin%20tai%20n%E1%BA%A1n%20th%C6%B0%C6%A1ng%20t%C3%ADch.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19175",
+      "query": "Cho mình hỏi các thao tác để kê dịch vụ giường cho bệnh nhân được không?",
+      "expected_issue_id": "19175",
+      "reference_answer": "các thao tác để kê dịch vụ giường cho bệnh nhân\n\nchọn module điều trị --> chọn bệnh nhân --> chọn dịch vụ --> chọn giường",
+      "subject": "các thao tác để kê dịch vụ giường cho bệnh nhân",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19175",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21621/%C4%91%E1%BB%95i%20g%C6%B0%E1%BB%9Dng%20cho%20b%E1%BB%87nh%20nh%C3%A2n.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19141",
+      "query": "Cho mình hỏi in phiếu hướng dẫn thực hiện cận lâm sàng ở đâu được không?",
+      "expected_issue_id": "19141",
+      "reference_answer": "in phiếu hướng dẫn thực hiện cận lâm sàng ở đâu\n\nchọn module phòng khám --> chọn in --> chọn phiếu hướng dẫn thực hiện cận lâm sàng",
+      "subject": "in phiếu hướng dẫn thực hiện cận lâm sàng ở đâu ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19141",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21611/h%C6%B0%E1%BB%9Bng%20d%E1%BA%ABn%20in%20phi%E1%BA%BFu%20h%C6%B0%E1%BB%9Bng%20d%E1%BA%ABn%20th%E1%BB%B1c%20hi%E1%BB%87n%20c%E1%BA%ADn%20l%C3%A2m%20s%C3%A0ng.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19136",
+      "query": "Cho mình hỏi lấy báo cáo thống kê số lượng dịch được không?",
+      "expected_issue_id": "19136",
+      "reference_answer": "Lấy báo cáo thống kê số lượng dịch\n\nChọn Báo Cáo --> Chọn Thống Kê Số Lượng Dịch Vụ --> Chọn thời gian:(Ví dụ Ngày vào viện, Tháng 5, Năm 2025) --> Chọn Nhóm theo khoa chỉ định --> Nhấn Lọc dịch vụ --> Tích chọn Khám Phụ Sản --> Nhấn Lưu.",
+      "subject": "Lấy báo cáo thống kê số lượng dịch ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19136",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21610/bcsoluongdv.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19135",
+      "query": "Cách in báo cáo PTTT theo tháng?",
+      "expected_issue_id": "19135",
+      "reference_answer": "Cách in báo cáo PTTT theo tháng\n\nVào module Chuyên Khoa -->  In --> Chọn Danh Sách Phẫu Thuật, Thủ Thuật --> Chọn Tháng --> Tích chọn các loại PTTT cần xem --> Nhấn OK để xem báo cáo",
+      "subject": "Cách in báo cáo PTTT theo tháng",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19135",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21609/baocao%20pttt.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19120",
+      "query": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Đã trả kết quả)?",
+      "expected_issue_id": "19120",
+      "reference_answer": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Đã trả kết quả)\n\nVào Module CDHA và Thăm dò chức năng --> Chọn BN cần sửa kết luận -> Chọn dịch vụ cần sửa --> Ấn \"Hủy trả kết quả\", xác nhận CÓ --> Click đúp vào tên dịch vụ vừa hủy trả --> Tiến hành sửa lại kết luận --> Lưu",
+      "subject": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Đã trả kết quả)",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19120",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19119",
+      "query": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Chưa trả kết quả)?",
+      "expected_issue_id": "19119",
+      "reference_answer": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Chưa trả kết quả)\n\nVào Module CDHA và Thăm dò chức năng --> Chọn BN cần sửa kết luận -> Chọn dịch vụ cần sửa --> Click đúp vào tên dịch vụ --> Tiến hành sửa lại kết luận --> Lưu",
+      "subject": "Hướng dẫn cách sửa kết luận dịch vụ CDHA và thăm dò chức năng (Chưa trả kết quả)",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19119",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19117",
+      "query": "Tại sao không sửa được kết luận dịch vụ CDHA và thăm dò chức năng?",
+      "expected_issue_id": "19117",
+      "reference_answer": "Tại sao không sửa được kết luận dịch vụ CDHA và thăm dò chức năng?\n\nNếu dịch vụ đã trả kết quả thì hệ thống sẽ không cho phép sửa lại kết luận\n--> Hướng xử lý: Hủy trả kết quả và kết luận lại",
+      "subject": "Tại sao không sửa được kết luận dịch vụ CDHA và thăm dò chức năng?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19117",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19116",
+      "query": "Hướng dẫn thống kê báo cáo tổng hợp dịch vụ kỹ thuật sử dụng?",
+      "expected_issue_id": "19116",
+      "reference_answer": "Hướng dẫn thống kê báo cáo tổng hợp dịch vụ kỹ thuật sử dụng\n\nVào module Báo cáo --> click đúp \"thống kê tổng hợp dịch vụ kỹ thuật sử dụng\" --> điền thời gian cần lấy thống kê và tích chọn các trường thông tin cần hiển thị --> OK --> In",
+      "subject": "Hướng dẫn thống kê báo cáo tổng hợp dịch vụ kỹ thuật sử dụng ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19116",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21598/2025-05-09_19-30-31.png"
+      ]
+    },
+    {
+      "case_id": "ticket_19115",
+      "query": "Tại sao không hiển thị thông tin BN trong bảng thống kê tổng hợp dịch vụ kỹ thuật sử dụng?",
+      "expected_issue_id": "19115",
+      "reference_answer": "Tại sao không hiển thị thông tin BN trong bảng thống kê tổng hợp dịch vụ kỹ thuật sử dụng?\n\nKhi ấn thống kê tổng hợp dịch vụ kỹ thuật sử dụng cần tích chọn \"In chi tiết thông tin bệnh nhân\"",
+      "subject": "Tại sao không hiển thị thông tin BN trong bảng thống kê tổng hợp dịch vụ kỹ thuật sử dụng?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19115",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21597/2025-05-09_19-19-38.png"
+      ]
+    },
+    {
+      "case_id": "ticket_19114",
+      "query": "Cách chuyển đợt thanh toán viện phí?",
+      "expected_issue_id": "19114",
+      "reference_answer": "Cách chuyển đợt thanh toán viện phí\n\nVào điều trị => tích chọn vào bệnh nhân => chọn 'thanh toán' => tích chọn vào cáo dịch vụ cần chuyển đợt thanh toán => chuột phải =>chuyển dịch vụ sang đợt thanh toán khác => chọn đợt thanh toán",
+      "subject": "Cách chuyển đợt thanh toán viện phí",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19114",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21596/C%C3%A1ch%20chuy%E1%BB%83n%20%C4%91%E1%BB%A3t%20thanh%20to%C3%A1n%20vi%E1%BB%87n%20ph%C3%AD.png"
+      ]
+    },
+    {
+      "case_id": "ticket_19086",
+      "query": "Cách gộp mã bệnh nhân?",
+      "expected_issue_id": "19086",
+      "reference_answer": "Cách gộp mã bệnh nhân\n\nVào Mudule Đón Tiếp => danh sách bệnh nhân => tìm kiếm bệnh nhân cần gộp => tích chọn vào tên 2 mã cần gộp => chuột phải =>gộp mã bệnh nhân => chọn mã gộp => lưu",
+      "subject": "Cách gộp mã bệnh nhân ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19086",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19085",
+      "query": "Cách xóa bệnh nhân không khám bệnh nữa?",
+      "expected_issue_id": "19085",
+      "reference_answer": "Cách xóa bệnh nhân không khám bệnh nữa\n\nVào Đón tiếp => danh sách đón tiếp => tim bệnh nhân => chuột phải vào bệnh  nhân => xóa\n\nlưu ý : chỉ xóa được bệnh nhân chưa phát sinh phiếu thu tiền",
+      "subject": "Cách xóa bệnh nhân không khám bệnh nữa",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19085",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21590/xoa%20Bn%20kh%C3%B4ng%20kham%20n%E1%BB%AFa.png"
+      ]
+    },
+    {
+      "case_id": "ticket_19065",
+      "query": "Cho mình hỏi in báo cáo y lệnh hằng ngày tìm ở đâu được không?",
+      "expected_issue_id": "19065",
+      "reference_answer": "in báo cáo y lệnh hằng ngày tìm ở đâu\n\nModule Hành chính  => In --> báo cáo y lệnh hằng ngày",
+      "subject": "in báo cáo y lệnh hằng ngày tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19065",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21587/b%C3%A1o%20c%C3%A1o%20y%20l%E1%BB%87nh%20h%C3%A0ng%20ng%C3%A0y.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19064",
+      "query": "Cho mình hỏi lịch sử kiểm tra thẻ bảo hiểm không hiện lịch sử phải làm sao được không?",
+      "expected_issue_id": "19064",
+      "reference_answer": "lịch sử kiểm tra thẻ bảo hiểm không hiện lịch sử phải làm sao\n\nthao tác kiểm tra thẻ xem có cập nhật lịch sử, khởi động lại phần mềm và thao tác kiểm tra lại",
+      "subject": "lịch sử kiểm tra thẻ bảo hiểm không hiện lịch sử phải làm sao",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19064",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_19056",
+      "query": "Cho mình hỏi muốn xem thiết bị kết nối (trung tâm kết nối thiết bị) tìm ở đâu được không?",
+      "expected_issue_id": "19056",
+      "reference_answer": "muốn xem thiết bị kết nối (trung tâm kết nối thiết bị) tìm ở đâu\n\nngười dùng --> trung tâm kết nối thiết bị",
+      "subject": "muốn xem thiết bị kết nối (trung tâm kết nối thiết bị) tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19056",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21583/trung%20tam%20ket%20noi%20thiet%20b%E1%BB%8B.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19023",
+      "query": "tại sao vỏ bệnh án chỉ hiện in không có phần ký?",
+      "expected_issue_id": "19023",
+      "reference_answer": "tại sao vỏ bệnh án chỉ hiện in không có phần ký\n\nCần nhập thông tin vào bệnh án, có dữ liệu mới được ký",
+      "subject": "tại sao vỏ bệnh án chỉ hiện in không có phần ký ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19023",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21579/cac%C3%B4ccontrong.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_19015",
+      "query": "Tại sao không bắt đầu khám được?",
+      "expected_issue_id": "19015",
+      "reference_answer": "Tại sao không bắt đầu khám được\n\nDo đã sửa ngày vào khi chưa bắt đầu khám--> liên hệ phòng kỹ thuật để được xử lý",
+      "subject": "Tại sao không bắt đầu khám được ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/19015",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18991",
+      "query": "Cho mình hỏi phần mềm bị treo không thao tác được, không tắt được phần mềm được không?",
+      "expected_issue_id": "18991",
+      "reference_answer": "Phần mềm bị treo không thao tác được, không tắt được phần mềm\n\nChuột phải vào thanh taskbar --> Task manager --> Tìm EhcHIS -->Chuột phải vào và chọn end process",
+      "subject": "Phần mềm bị treo không thao tác được, không tắt được phần mềm",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18991",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18989",
+      "query": "Tại sao không thấy tìm thấy phiếu truyền dịch đã đánh?",
+      "expected_issue_id": "18989",
+      "reference_answer": "Tại sao không thấy tìm thấy phiếu truyền dịch đã đánh\n\nNguyên nhân: do điều dưỡng xóa mất phiếu truyền dịch này rồi ạ \n\nxử lý : tạo lại phiếu và nhập tay",
+      "subject": "Tại sao không thấy tìm thấy phiếu truyền dịch đã đánh",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18989",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18974",
+      "query": "Cho mình hỏi khi lưu phiếu truyền máu phần mềm báo chưa nhập bác sĩ chỉ định được không?",
+      "expected_issue_id": "18974",
+      "reference_answer": "Khi lưu phiếu truyền máu phần mềm báo chưa nhập bác sĩ chỉ định\n\nTrong phiếu truyền máu --> vào tab theo dõi nhập bác sĩ điều trị",
+      "subject": "Khi lưu phiếu truyền máu phần mềm báo chưa nhập bác sĩ chỉ định",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18974",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18973",
+      "query": "Cho mình hỏi in phiếu báo cáo sổ vào viện, ra viện, chuyển viện ở đâu được không?",
+      "expected_issue_id": "18973",
+      "reference_answer": "in phiếu báo cáo sổ vào viện, ra viện, chuyển viện ở đâu\n\nModule Hành chính => In --> sổ vào viện, ra viện, chuyển viện",
+      "subject": "in phiếu báo cáo sổ vào viện, ra viện, chuyển viện ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18973",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21569/s%E1%BB%95%20v%C3%A0o%20vi%E1%BB%87n,%20ra%20vi%E1%BB%87n,%20chuy%E1%BB%83n%20vi%E1%BB%87n.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18972",
+      "query": "Cho mình hỏi in báo cáo hoạt động điều trị ở đâu được không?",
+      "expected_issue_id": "18972",
+      "reference_answer": "in báo cáo hoạt động điều trị ở đâu\n\nModule Hành chính => in --> báo cáo hoạt động điều trị",
+      "subject": "in báo cáo hoạt động điều trị ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18972",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21568/b%C3%A1o%20c%C3%A1o%20ho%E1%BA%A1t%20%C4%91%E1%BB%99ng%20%C4%91i%E1%BB%81u%20tr%E1%BB%8B.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18970",
+      "query": "Tại sao không tiếp nhận gói khám biên phòng 2 cho nhận bệnh nhân?",
+      "expected_issue_id": "18970",
+      "reference_answer": "Tại sao không tiếp nhận gói khám biên phòng 2 cho nhận bệnh nhân\n\nDo gói khám chưa có công khám --> cần thêm công khám thì sẽ tiếp nhận được",
+      "subject": " Tại sao không tiếp nhận gói khám biên phòng 2 cho nhận bệnh nhân ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18970",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18966",
+      "query": "Cho mình hỏi in phiếu công khai thuốc, vật tư, dịch vụ ở đâu được không?",
+      "expected_issue_id": "18966",
+      "reference_answer": "in phiếu công khai thuốc, vật tư, dịch vụ ở đâu\n\nModule Hành chính => menu --> phiếu công khai thuốc, vật tư, dịch vụ",
+      "subject": "in phiếu công khai thuốc, vật tư, dịch vụ ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18966",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21566/phieu%20c%C3%B4ng%20khai%20thu%E1%BB%91c,v%E1%BA%ADt%20t%C6%B0,%20d%E1%BB%8Bch%20v%E1%BB%A5.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18953",
+      "query": "Cho mình hỏi khi mở lại bệnh án(không cho xử tri lại) muốn xử trí phải làm như thế nào được không?",
+      "expected_issue_id": "18953",
+      "reference_answer": "Khi mở lại bệnh án(không cho xử tri lại) muốn xử trí phải làm như thế nào?\n\nChuột phải bệnh nhân-->lưu bệnh án.",
+      "subject": "Khi mở lại bệnh án(không cho xử tri lại) muốn xử trí phải làm như thế nào?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18953",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21561/l%C6%B0u%20b%E1%BB%87nh%20%C3%A1n%20khi%20(kh%C3%B4ng%20cho%20x%E1%BB%AD%20tr%C3%AD%20l%E1%BA%A1i).png"
+      ]
+    },
+    {
+      "case_id": "ticket_18952",
+      "query": "Cho mình hỏi không in được tài liệu khi chưa ký được không?",
+      "expected_issue_id": "18952",
+      "reference_answer": "Không in được tài liệu khi chưa ký\n\nVào danh mục --> danh mục tài liệu --> chọn tài liệu cần in --> tích vào tùy chọn cho phép in khi chưa duyệt, cho phép in khi chưa ký",
+      "subject": "Không in được tài liệu khi chưa ký ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18952",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18943",
+      "query": "Cho mình hỏi thêm mã thẻ bhyt ở đâu được không?",
+      "expected_issue_id": "18943",
+      "reference_answer": "Thêm mã thẻ BHYT ở đâu?\n\nChọn danh mục-->Tìm Danh mục nhóm đối tượng BHYT-->thêm-->nhập thông tin-->lưu.",
+      "subject": "Thêm mã thẻ BHYT ở đâu?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18943",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18942",
+      "query": "Cho mình hỏi màn hình anydesk máy kết nối quá bé không hiện hết các module phải làm sao được không?",
+      "expected_issue_id": "18942",
+      "reference_answer": "màn hình anydesk máy kết nối quá bé không hiện hết các module phải làm sao\n\nchỉnh display resolution máy kết nối sao cho nhìn đủ các module của phần mềm",
+      "subject": "màn hình anydesk máy kết nối quá bé không hiện hết các module phải làm sao",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18942",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18932",
+      "query": "tại sao bệnh nhân có ngày giờ chỉ định khác với ngày giờ y lệnh?",
+      "expected_issue_id": "18932",
+      "reference_answer": "tại sao bệnh nhân có ngày giờ chỉ định khác với ngày giờ y lệnh?\n\nNgày chỉ định là lấy theo giờ hiện tại, còn ngày y lệnh thì user có thể sửa được hoặc chỉ định vào phiếu cũ.",
+      "subject": "tại sao bệnh nhân có ngày giờ chỉ định khác với ngày giờ y lệnh?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18932",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21557/2025-05-08_9-23-57.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18920",
+      "query": "Cho mình hỏi làm thế nào để nhập bệnh án lưu trữ được không?",
+      "expected_issue_id": "18920",
+      "reference_answer": "Làm thế nào để nhập bệnh án lưu trữ\n\nVào quản lý hồ sơ -> chọn tên bệnh nhân -> chọn thông tin lưu trữ -> chọn nhập kho -> nhập thông tin lưu trữ -> chọn lưu là được",
+      "subject": "Làm thế nào để nhập bệnh án lưu trữ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18920",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21551/Nh%E1%BA%ADp%20b%E1%BB%87nh%20%C3%A1n%20l%C6%B0u%20tr%E1%BB%AF.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18919",
+      "query": "Cho mình hỏi làm thế nào để tách đối tượng điều trị được không?",
+      "expected_issue_id": "18919",
+      "reference_answer": "Làm thế nào để tách đối tượng điều trị\n\nVào đối tượng nội trú -> tìm tên bệnh nhân -> ấn chuột phải vào tên bệnh nhân -> nhập ngày kết thúc sẽ là hạn thẻ cũ và ngày bắt đầu là hạn thẻ mới + nhập mã ICD -> ấn lưu là đc",
+      "subject": "Làm thế nào để tách đối tượng điều trị",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18919",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21550/t%C3%A1ch%20%C4%91%E1%BB%91i%20t%C6%B0%E1%BB%A3ng%20%C4%91i%E1%BB%81u%20tr%E1%BB%8B.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18918",
+      "query": "Cho mình hỏi làm thế nào để sửa thời gian thực hiện và thời gian trả kết quả xét nghiệm được không?",
+      "expected_issue_id": "18918",
+      "reference_answer": "Làm thế nào để sửa thời gian thực hiện và thời gian trả kết quả xét nghiệm\n\nVào module xét nghiệm -> chuột phải vào bệnh nhân cần sửa -> chọn sửa thông tin phiếu -> Sửa lại thời gian thực hiện và trả kết quả -> chọn lưu",
+      "subject": "Làm thế nào để sửa thời gian thực hiện và thời gian trả kết quả xét nghiệm",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18918",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21549/s%E1%BB%ADa%20th%E1%BB%9Di%20gian%20th%E1%BB%B1c%20hi%E1%BB%87n%20v%C3%A0%20th%E1%BB%9Di%20gian%20tr%E1%BA%A3%20k%E1%BA%BFt%20qu%E1%BA%A3%20x%C3%A9t%20nghi%E1%BB%87m.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18917",
+      "query": "Cho mình hỏi làm thế nào để lấy báo cáo số lượng thực hiện dịch vụ theo phòng thực hiện được không?",
+      "expected_issue_id": "18917",
+      "reference_answer": "Làm thế nào để lấy báo cáo số lượng thực hiện dịch vụ theo phòng thực hiện\n\nVào module xét nghiệm -> chọn in -> chọn báo cáo số lượng thực hiện dịch vụ theo phòng thực hiện là được",
+      "subject": "Làm thế nào để lấy báo cáo số lượng thực hiện dịch vụ theo phòng thực hiện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18917",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18906",
+      "query": "tại sao khi xuất dữ liệu báo cáo  lại có ô  không hiện được dữ liệu?",
+      "expected_issue_id": "18906",
+      "reference_answer": "tại sao khi xuất dữ liệu báo cáo  lại có ô  không hiện được dữ liệu\n\nnguyên nhân : do dữ liệu quá nhiều nên không thể hiện thị hết được\n\nxử lý: kéo rộng ô hiện thị ra",
+      "subject": "tại sao khi xuất dữ liệu báo cáo  lại có ô  không hiện được dữ liệu ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18906",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18905",
+      "query": "tại sao không in được đơn thuốc ở CDHA?",
+      "expected_issue_id": "18905",
+      "reference_answer": "tại sao không in được đơn thuốc ở CDHA\n\nnguyên nhân:đo cấu hình chỉ cho in tại phòng khám bệnh\n\nxử lý : cấu hình lại cho CDHA được in",
+      "subject": "tại sao không in được đơn thuốc ở CDHA",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18905",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18888",
+      "query": "Cho mình hỏi muốn in báo cáo nhập xuất tồn thuốc toàn viện ở đâu được không?",
+      "expected_issue_id": "18888",
+      "reference_answer": "Muốn in báo cáo nhập xuất tồn thuốc toàn viện ở đâu\n\nModule báo cáo >> tìm theo tên",
+      "subject": "Muốn in báo cáo nhập xuất tồn thuốc toàn viện ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18888",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18882",
+      "query": "Cho mình hỏi muốn chỉ định phiếu truyền máu cho bn làm như nào được không?",
+      "expected_issue_id": "18882",
+      "reference_answer": "Muốn chỉ định phiếu truyền máu cho BN làm như nào\n\nĐầu tiên chị cần chỉ định máu cho BN tại module điều trị  ( lưu ý nên nhập nhóm máu mới có thể chỉ định)\nSang module kho máu để xuất kho ạ. Không tìm thấy thì mình lọc theo mã phiếu hoặc ngày\nQuay lại module điều trị >> chọn bệnh nhân vừa hoàn thành chị định máu >> tìm phiều truyền máu >> máu đã duyệt >> rồi chọn cái muốn tạo phiếu truyền máu >> lưu",
+      "subject": " Muốn chỉ định phiếu truyền máu cho BN làm như nào",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18882",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18881",
+      "query": "Tại sao không tạo  được phiếu truyền?",
+      "expected_issue_id": "18881",
+      "reference_answer": "Tại sao không tạo  được phiếu truyền\n\nNguyên nhân:do thuốc tạo phiếu truyền dịch chưa có thông tin thể tích truyền dịch nên không thể tạo phiếu được\n\nxử lý: liên hệ khoa dược bổ xung thể tích cho thuốc truyền",
+      "subject": "Tại sao không tạo  được phiếu truyền",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18881",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18879",
+      "query": "Cho mình hỏi in phiếu thanh toán bhyt nội trú ở đâu được không?",
+      "expected_issue_id": "18879",
+      "reference_answer": "in phiếu thanh toán bhyt nội trú ở đâu\n\nModule Hành chính => In --> phiếu thanh toán bhyt nội trú",
+      "subject": "in phiếu thanh toán bhyt nội trú ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18879",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21547/in%20phi%E1%BA%BFu%20thanh%20to%C3%A1n%20BHYT%20n%E1%BB%99i%20tr%C3%BA.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18877",
+      "query": "Cho mình hỏi in bảng kê khám bệnh, chữa bệnh tìm ở đâu được không?",
+      "expected_issue_id": "18877",
+      "reference_answer": "in bảng kê khám bệnh, chữa bệnh tìm ở đâu\n\nModule Hành chính => In --> Bảng kê khám bệnh, chữa bệnh",
+      "subject": "in bảng kê khám bệnh, chữa bệnh tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18877",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21546/in%20b%E1%BA%A3ng%20k%C3%AA%20kh%C3%A1m%20b%E1%BB%87nh,ch%E1%BB%AFa%20b%E1%BB%87nh.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18876",
+      "query": "Cho mình hỏi in phiếu khám chữa bệnh tìm ở đâu được không?",
+      "expected_issue_id": "18876",
+      "reference_answer": "In phiếu khám chữa bệnh tìm ở đâu\n\nModule Hành chính => In --> Thẻ khám chữa bệnh",
+      "subject": "In phiếu khám chữa bệnh tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18876",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21544/in%20phi%E1%BA%BFu%20kh%C3%A1m%20ch%E1%BB%AFa%20b%E1%BB%87nh.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18874",
+      "query": "Tại sao báo cáo xuất tồn lại bị âm?",
+      "expected_issue_id": "18874",
+      "reference_answer": "Tại sao báo cáo xuất tồn lại bị âm\n\nDo kỳ kiểm kê chọn ngày bị sai , xóa kỳ kiểm kê đi là được",
+      "subject": "Tại sao báo cáo xuất tồn lại bị âm",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18874",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18871",
+      "query": "Cho mình hỏi cài định mức hao phí vât tư tiêu hao khi chỉ định dịch vụ được không?",
+      "expected_issue_id": "18871",
+      "reference_answer": "Cài định mức hao phí vât tư tiêu hao khi chỉ định dịch vụ\n\nHệ thống -> Quản lý hệ thống -> Danh sách dịch vụ kỹ thuật -> Nháy đúp vào dịch vụ -> Cấu hình thuốc / vật tư hao phí, đi kèm --> Lưu",
+      "subject": "Cài định mức hao phí vât tư tiêu hao khi chỉ định dịch vụ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18871",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21541/z6537416961953_1947307aeff4f173e4ecf1c2384dceb1.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18870",
+      "query": "Cho mình hỏi cài hình thời gian tối thiểu thực hiện một dịch vụ như nào được không?",
+      "expected_issue_id": "18870",
+      "reference_answer": "Cài hình thời gian tối thiểu thực hiện một dịch vụ như nào\n\nModule hệ thống >> quản lý hệ thống >> danh sách dịch vụ kỹ thuật >> chọn dịch vụ >> điền giờ vào ô thời gian tối thiểu",
+      "subject": "Cài hình thời gian tối thiểu thực hiện một dịch vụ như nào",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18870",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18869",
+      "query": "Cho mình hỏi lấy danh sách bệnh nhân vào viện - chuyển viện - ra viện được không?",
+      "expected_issue_id": "18869",
+      "reference_answer": "Lấy danh sách bệnh nhân vào viện - chuyển viện - ra viện\n\nVào Module Điều trị --> Chọn \"In\" trên thanh menu --> Chọn \"Sổ vào viện, ra viện, chuyển viện\" --> Lọc thời gian --> In",
+      "subject": "Lấy danh sách bệnh nhân vào viện - chuyển viện - ra viện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18869",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21540/z6569010574150_7bb35f48ad3e55586f02bf552ec86272.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18868",
+      "query": "Cho mình hỏi muốn cấu hình phòng chuẩn đoán hình ảnh dành cho khám sức khỏe doanh nghiệp được không?",
+      "expected_issue_id": "18868",
+      "reference_answer": "Muốn cấu hình phòng chuẩn đoán hình ảnh dành cho khám sức khỏe doanh nghiệp\n\nmodule hệ thống >> quản lý hệ thống>> danh sách phòng >> tìm phòng chuẩn đoán hình ảnh >> tích chỉ dùng cho bệnh nhân ksk",
+      "subject": "Muốn cấu hình phòng chuẩn đoán hình ảnh dành cho khám sức khỏe doanh nghiệp",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18868",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18867",
+      "query": "Cho mình hỏi thêm hạn thẻ bhyt mới cho bn được không?",
+      "expected_issue_id": "18867",
+      "reference_answer": "Thêm hạn thẻ BHYT mới cho BN\n\nvào Module Đối tượng nội trú -> tìm tên BN -> ấn chuột phải vào tên BN -> nhập ngày kết thúc là hạn thẻ cũ và ngày bắt đầu là hạn thẻ mới + nhập mã ICD -> ấn lưu\nSau đó click vào tên BN nhập mã và hạn thẻ mới",
+      "subject": "Thêm hạn thẻ BHYT mới cho BN ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18867",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21539/z6569665270632_60dfc49eb659d041649a64e6e0412c07.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18866",
+      "query": "Cho mình hỏi muốn thuốc tự động nhập kho trong tủ trực mà không cần ấn nhập kho được không?",
+      "expected_issue_id": "18866",
+      "reference_answer": "Muốn thuốc tự động nhập kho trong tủ trực mà không cần ấn nhập kho\n\nmodule hệ thống >> quản lý hệ thống >> danh sách phòng >> tìm tủ trực >> tích tự động nhập kho khi kho chắn xuất phiếu >> lưu",
+      "subject": "Muốn thuốc tự động nhập kho trong tủ trực mà không cần ấn nhập kho",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18866",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18865",
+      "query": "Cho mình hỏi thay đổi công khám cho bn được không?",
+      "expected_issue_id": "18865",
+      "reference_answer": "Thay đổi công khám cho BN\n\nVào module Khám bệnh --> Chọn BN cần thay đổi --> Chọn tab Công khám --> Chuột phải vào công khám --> chọn thay thế dịch vụ --> chọn dịch vụ muốn thay thế --> lưu",
+      "subject": "Thay đổi công khám cho BN ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18865",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21538/z6549474574941_67d32677d93106839ee206fcbb907911.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18864",
+      "query": "Cho mình hỏi chuyển bn sang phòng khám khác được không?",
+      "expected_issue_id": "18864",
+      "reference_answer": "Chuyển BN sang phòng khám khác\n\nVào Module Khám bệnh --> Chọn BN cần chuyển --> Chuột phải, chọn \"Chuyển bệnh nhân sang phòng khác\" --> Chọn phòng chuyển đến --> Lưu",
+      "subject": "Chuyển BN sang phòng khám khác",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18864",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18858",
+      "query": "Hướng dẫn thêm phòng chức năng?",
+      "expected_issue_id": "18858",
+      "reference_answer": "Hướng dẫn thêm phòng chức năng\n\nvào module Hệ thống --> Quản lý hệ thống --> Danh sách phòng --> Chọn loại phòng cần thêm phòng chức năng --> Ấn \"Thêm\" trên thanh menu --> Điền các mục thông tin cho phòng mới --> Lưu (Thoát PM vào lại)",
+      "subject": "Hướng dẫn thêm phòng chức năng",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18858",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18856",
+      "query": "Cho mình hỏi tại mở bệnh án ra lưu lại mà không lưu được, phần mềm cũng không báo gì sau khi bấm lưu được không?",
+      "expected_issue_id": "18856",
+      "reference_answer": "Tại mở bệnh án ra lưu lại mà không lưu được, phần mềm cũng không báo gì sau khi bấm lưu\n\nẤn làm mới lại là được",
+      "subject": "Tại mở bệnh án ra lưu lại mà không lưu được, phần mềm cũng không báo gì sau khi bấm lưu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18856",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18844",
+      "query": "Cách in phiếu chỉ định dịch vụ riêng?",
+      "expected_issue_id": "18844",
+      "reference_answer": "Cách in phiếu chỉ định dịch vụ riêng\n\nChuột phải vào dịch vụ muốn in => chọn in phiếu chỉ định đã chọn",
+      "subject": "Cách in phiếu chỉ định dịch vụ riêng",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18844",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18830",
+      "query": "Cho mình hỏi vỏ bệnh án in lỗi mất chữ trái hoặc phải được không?",
+      "expected_issue_id": "18830",
+      "reference_answer": "vỏ bệnh án in lỗi mất chữ trái hoặc phải\n\nmở file trong word chọn Layout --> custom margins rồi chỉnh phần bị in mờ",
+      "subject": "vỏ bệnh án in lỗi mất chữ trái hoặc phải",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18830",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18828",
+      "query": "Cho mình hỏi làm thế nào để xem sinh nhật bệnh nhân được không?",
+      "expected_issue_id": "18828",
+      "reference_answer": "làm thế nào để xem sinh nhật bệnh nhân\n\nModule Hành chính => Menu --> Thống kê sinh nhật bệnh nhân",
+      "subject": "làm thế nào để xem sinh nhật bệnh nhân",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18828",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21526/th%E1%BB%91ng%20k%C3%AA%20sinh%20nh%E1%BA%ADt%20b%E1%BB%87nh%20nh%C3%A2n.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18824",
+      "query": "tại sao khi bác sĩ ấn in lại không hiện ra giao diện nội dung in?",
+      "expected_issue_id": "18824",
+      "reference_answer": "tại sao khi bác sĩ ấn in lại không hiện ra giao diện nội dung in\n\ndo máy tính bác sĩ đang thiếu C++ cần cài C++ cho máy tính bác sĩ",
+      "subject": "tại sao khi bác sĩ ấn in lại không hiện ra giao diện nội dung in",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18824",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18823",
+      "query": "cách tìm biến thành viên PTTT trong danh mục e-kip PTTT để thêm vào danh sách Phẫu thuật thủ thuật?",
+      "expected_issue_id": "18823",
+      "reference_answer": "cách tìm biến thành viên PTTT trong danh mục e-kip PTTT để thêm vào danh sách Phẫu thuật thủ thuật\n\nDanh muc-> e-kip Phẫu thuật thủ thuật-> chọn Phẫu thuât hoặc thủ thuật là thấy danh sách biến các thanh viên PTTT",
+      "subject": "cách tìm biến thành viên PTTT trong danh mục e-kip PTTT để thêm vào danh sách Phẫu thuật thủ thuật",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18823",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18822",
+      "query": "tại sao phiếu kết quả dịch vụ sau khi sửa lại phiếu trong hệ thống mà thoát phần mềm ra vào lại không thay đổi?",
+      "expected_issue_id": "18822",
+      "reference_answer": "tại sao phiếu kết quả dịch vụ sau khi sửa lại phiếu trong hệ thống mà thoát phần mềm ra vào lại không thay đổi\n\ndo phiếu đã được ký số, cần hủy ký rồi thoát phần mềm ra vào lại phiếu mới được thay đổi",
+      "subject": "tại sao phiếu kết quả dịch vụ sau khi sửa lại phiếu trong hệ thống mà thoát phần mềm ra vào lại không thay đổi",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18822",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18821",
+      "query": "cách chọn ekip chẩn đoán hình ảnh?",
+      "expected_issue_id": "18821",
+      "reference_answer": "cách chọn ekip chẩn đoán hình ảnh\n\nmodule CĐHA và chăm dò chức năng-> menu-> chọn e-kip -> chọn các thành viên trong e-kip -> lưu",
+      "subject": "cách chọn ekip chẩn đoán hình ảnh",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18821",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18820",
+      "query": "tại sao nội dung phương pháp điều trị trong giấy ra viện hiển thị nội dung bị xuống dòng?",
+      "expected_issue_id": "18820",
+      "reference_answer": "tại sao nội dung phương pháp điều trị trong giấy ra viện hiển thị nội dung bị xuống dòng\n\ndo trong tổng kết bệnh án bác ghi nội dung xuống dòng nên nội dung bên giấy ra viện cũng bị xuống dòng",
+      "subject": "tại sao nội dung phương pháp điều trị trong giấy ra viện hiển thị nội dung bị xuống dòng",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18820",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21525/gi%E1%BA%A5y%20ra%20vi%E1%BB%87n.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18814",
+      "query": "Cho mình hỏi tạo giấy khám sức khỏe được không?",
+      "expected_issue_id": "18814",
+      "reference_answer": "Tạo giấy khám sức khỏe\n\nvào Khám bệnh => nhấn đúp hai lần vào bệnh nhân => khám sức khỏe lái xe => thên KSK lái xe => nhập các thông tin => ấn lưu lại",
+      "subject": "Tạo giấy khám sức khỏe",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18814",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21524/kh%C3%A1m%20suc%20khoe.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18813",
+      "query": "Cách taọ giấy nghỉ ốm?",
+      "expected_issue_id": "18813",
+      "reference_answer": "Cách taọ giấy nghỉ ốm\n\nVào Module Điều trị => tích chọn bệnh nhân => bệnh án => chọn 'giấy nghỉ ốm'=> Thêm giấy nghỉ ốm => nhập thông tin => lưu lại",
+      "subject": "Cách taọ giấy nghỉ ốm",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18813",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21518/ngh%E1%BB%89%20%E1%BB%91m.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18812",
+      "query": "Tại sao thấy bs lên thuốc mà không thấy gửi phiếu cho Dược duyệt?",
+      "expected_issue_id": "18812",
+      "reference_answer": "Tại sao thấy bs lên thuốc mà không thấy gửi phiếu cho Dược duyệt\n\nNguyên nhân : là do bs chưa tạo phiếu tổng hợp y lệnh thuốc nên chưa có phiếu thuốc để bên dược duyệt\n\nxử lý: tạo phiếu tổng hợp y lệnh thuốc",
+      "subject": "Tại sao thấy bs lên thuốc mà không thấy gửi phiếu cho Dược duyệt",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18812",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18811",
+      "query": "Cách lưu trữ hồ sơ?",
+      "expected_issue_id": "18811",
+      "reference_answer": "Cách lưu trữ hồ sơ\n\nVào Module Quản lý hồ sơ => tích chọn vào tên bệnh nhân  => ấn sang tab 'thông tin lưu trữ'=> nhập kho => điền các thông tin => lưu lại",
+      "subject": "Cách lưu trữ hồ sơ ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18811",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21515/luu%20tru%20ho%20so.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18810",
+      "query": "Cách tạo thêm một giường bệnh cho  viện?",
+      "expected_issue_id": "18810",
+      "reference_answer": "Cách tạo thêm một giường bệnh cho  viện\n\nVào Module Hệ Thống =>Quản lý hệ thống =>danh sách giường =>Thêm => nhập thông tin => lưu lại",
+      "subject": "Cách tạo thêm một giường bệnh cho  viện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18810",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21509/them%20giuong.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18801",
+      "query": "Cách chuyển loại bệnh án cho BN?",
+      "expected_issue_id": "18801",
+      "reference_answer": "Cách chuyển loại bệnh án cho BN\n\nVào module Điều trị --> Chọn BN cần chuyển --> Click vào thanh menu --> Chọn \"Chuyển loại bệnh án\" --> Lưu",
+      "subject": "Cách chuyển loại bệnh án cho BN",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18801",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18776",
+      "query": "Cho mình hỏi quản lý lịch mổ tìm ở đâu được không?",
+      "expected_issue_id": "18776",
+      "reference_answer": "quản lý lịch mổ tìm ở đâu\n\nModule Hành chính => menu --> quản lý lịch mổ",
+      "subject": "quản lý lịch mổ tìm ở đâu ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18776",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21523/qu%E1%BA%A3n%20l%C3%BD%20l%E1%BB%8Bch%20m%E1%BB%95.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18773",
+      "query": "Cho mình hỏi cấu hình in nâng cao được không?",
+      "expected_issue_id": "18773",
+      "reference_answer": "Cấu hình in nâng cao\n\nvào module Danh mục --> Bệnh án điện tử --> Danh mục tài liệu --> Chọn tên tài liệu cần cấu hình in --> Trong mục Cấu hình in nâng cao, tích chọn \"Chế độ in khổ giấy nâng cao\" --> lưu",
+      "subject": "Cấu hình in nâng cao",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18773",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18771",
+      "query": "Tại sao khi xử trí lại có thông báo lỗi trạng thái?",
+      "expected_issue_id": "18771",
+      "reference_answer": "Tại sao khi xử trí lại có thông báo lỗi trạng thái\n\nDo đã có người khác xử trí rồi, bấm làm mới lại là được",
+      "subject": "Tại sao khi xử trí lại có thông báo lỗi trạng thái",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18771",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18759",
+      "query": "Tại sao sửa phiếu, báo cáo xong mà máy của viện không cập nhật phiếu, báo cáo mới?",
+      "expected_issue_id": "18759",
+      "reference_answer": "Tại sao sửa phiếu, báo cáo xong mà máy của viện không cập nhật phiếu, báo cáo mới\n\nDo chưa thoát phần mềm ra vào lại",
+      "subject": "Tại sao sửa phiếu, báo cáo xong mà máy của viện không cập nhật phiếu, báo cáo mới",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18759",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18749",
+      "query": "Cho mình hỏi muốn cấu hình dịch vụ đã làm rồi thì phải sau một khoảng thời gian bn mới được làm tiếp như thế nào được không?",
+      "expected_issue_id": "18749",
+      "reference_answer": "Muốn cấu hình dịch vụ đã làm rồi thì phải sau một khoảng thời gian BN mới được làm tiếp như thế nào\n\nModule hệ thống >> danh sách dịch vụ kỹ thuật >> chọn dịch vụ cần cấu hình >> Điền số ngày tái sử dụng >> lưu",
+      "subject": "Muốn cấu hình dịch vụ đã làm rồi thì phải sau một khoảng thời gian BN mới được làm tiếp như thế nào",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18749",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18748",
+      "query": "Cho mình hỏi quản lý  bệnh nhân đẻ tìm ở đâu được không?",
+      "expected_issue_id": "18748",
+      "reference_answer": "Quản lý  bệnh nhân đẻ tìm ở đâu\n\nModule Hành chính => Menu --> quản lý bệnh nhân đẻ",
+      "subject": "Quản lý  bệnh nhân đẻ tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18748",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21517/qu%E1%BA%A3n%20l%C3%BD%20b%E1%BB%87nh%20nh%C3%A2n%20%C4%91%E1%BA%BB.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18747",
+      "query": "Cho mình hỏi quản lý bệnh nhân mổ tìm ở đâu được không?",
+      "expected_issue_id": "18747",
+      "reference_answer": "quản lý bệnh nhân mổ tìm ở đâu\n\nModule Hành chính => Menu --> quản lý bệnh nhân mổ",
+      "subject": "quản lý bệnh nhân mổ tìm ở đâu",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18747",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21516/qu%E1%BA%A3n%20l%C3%BD%20b%E1%BB%87nh%20nh%C3%A2n%20m%E1%BB%95.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18746",
+      "query": "Cho mình hỏi dịch vụ xét nghiệm không hiện thị trên phiếu điều trị sửa làm sao được không?",
+      "expected_issue_id": "18746",
+      "reference_answer": "Dịch vụ xét nghiệm không hiện thị trên phiếu điều trị sửa làm sao\n\nModule hệ thống >> danh sách dịch vụ ký thuật >> chọn dịch vụ cần sửa >> tích vào ô in trên phiếu điều trị",
+      "subject": "Dịch vụ xét nghiệm không hiện thị trên phiếu điều trị sửa làm sao",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18746",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18745",
+      "query": "Cho mình hỏi cấu hình số lần in của phiếu kết quả xét nghiệm như nào được không?",
+      "expected_issue_id": "18745",
+      "reference_answer": "Cấu hình số lần in của phiếu kết quả xét nghiệm như nào\n\nmodule danh mục >> danh mục tài liệu >> chọn phiếu kết quả xét nghiệm >> điền số lần in tối đa >> lưu",
+      "subject": "Cấu hình số lần in của phiếu kết quả xét nghiệm như nào",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18745",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18744",
+      "query": "Cho mình hỏi cấu hình chưa đủ chữ kí thì không được đóng dấu làm sao được không?",
+      "expected_issue_id": "18744",
+      "reference_answer": "Cấu hình chưa đủ chữ kí thì không được đóng dấu làm sao\n\nmodule danh mục >> danh mục tài liệu >> bệnh án >> tích chặn hoặc cảnh báo khi chưa đủ chứ kí",
+      "subject": "Cấu hình chưa đủ chữ kí thì không được đóng dấu làm sao",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18744",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18743",
+      "query": "Hướng dẫn tổng hợp phiếu lĩnh thuốc?",
+      "expected_issue_id": "18743",
+      "reference_answer": "Hướng dẫn tổng hợp phiếu lĩnh thuốc\n\nsau khi đã chỉ định thuốc cho BN --> vào module Hành chính --> Quản lý thuốc --> Tạo phiếu(Dấu cộng màu xanh trên thanh chức năng) --> Tổng hợp phiếu lĩnh thuốc --> Điền đầy đủ thông tin trên bảng tổng hợp y lệnh --> Tổng hợp --> Lưu",
+      "subject": "Hướng dẫn tổng hợp phiếu lĩnh thuốc",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18743",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18742",
+      "query": "Cho mình hỏi lỗi không in được trang bệnh án mình đã chọn được không?",
+      "expected_issue_id": "18742",
+      "reference_answer": "Lỗi không in được trang bệnh án mình đã chọn\n\nModule danh mục >> danh mục tài liệu >> chọn bệnh án >> tích chế độ in khổ giấy nâng cao >> chọn khổ giấy, chiều giấy >> lưu",
+      "subject": "Lỗi không in được trang bệnh án mình đã chọn",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18742",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18740",
+      "query": "Tại sao đã chỉ định thuốc cho BN nội trú  nhưng không tìm thấy mã phiếu trong kho thuốc?",
+      "expected_issue_id": "18740",
+      "reference_answer": "Tại sao đã chỉ định thuốc cho BN nội trú  nhưng không tìm thấy mã phiếu trong kho thuốc?\n\nĐối với BN nội trú cần tổng hợp y lệnh trước. Sau đó mới đến kho thuốc nội trú lĩnh thuốc về khoa",
+      "subject": "Tại sao đã chỉ định thuốc cho BN nội trú  nhưng không tìm thấy mã phiếu trong kho thuốc?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18740",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18725",
+      "query": "Cách sửa thời gian xét nghiệm?",
+      "expected_issue_id": "18725",
+      "reference_answer": "Cách sửa thời gian xét nghiệm\n\nModule xét nghiệm --> chuột phải vào tên bệnh nhân -->sửa thông tin phiếu",
+      "subject": "Cách sửa thời gian xét nghiệm ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18725",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18715",
+      "query": "Cách thêm giường bệnh?",
+      "expected_issue_id": "18715",
+      "reference_answer": "Cách thêm giường bệnh?\n\nChọn hệ thống-->Chọn danh sách giường-->thêm-->nhập thông tin-->Lưu",
+      "subject": "Cách thêm giường bệnh?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18715",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21505/th%C3%AAm%20gi%C6%B0%E1%BB%9Dng.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18714",
+      "query": "Cho mình hỏi kiểm tra lịch sử thay đổi đối tượng dịch vụ được không?",
+      "expected_issue_id": "18714",
+      "reference_answer": "Kiểm tra lịch sử thay đổi đối tượng dịch vụ\n\nVào Module Điều trị --> Chọn BN cần kiểm tra --> Click mục \"Thanh toán\" trên thanh menu --> Chọn tên DV, Thuốc, VT cần kiểm tra --> Chuột phải chọn \"Lịch sử chuyển đối tượng dịch vụ\"",
+      "subject": "Kiểm tra lịch sử thay đổi đối tượng dịch vụ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18714",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21504/2025-05-06_9-04-23.png"
+      ]
+    },
+    {
+      "case_id": "ticket_18712",
+      "query": "Cách sửa nội dung phiếu điều trị khi bệnh nhân đã ra viện?",
+      "expected_issue_id": "18712",
+      "reference_answer": "Cách sửa nội dung phiếu điều trị khi bệnh nhân đã ra viện\n\nMở tạm bệnh án để sửa chữa(không cho xử trí lại) rồi sửa\nTrường hợp bệnh nhân đã duyệt thanh toán, báo với kế toán hủy duyệt rồi mở lại bệnh án",
+      "subject": "Cách sửa nội dung phiếu điều trị khi bệnh nhân đã ra viện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18712",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18701",
+      "query": "Cho mình hỏi ký chữ ký điện tử đối với giấy chuyển tuyến như nào được không?",
+      "expected_issue_id": "18701",
+      "reference_answer": "ký chữ ký điện tử đối với giấy chuyển tuyến như nào?\n\nphần chữ kí này là lãnh đạo ký  => ấn lưu tài liệu là phiếu đã được lưu để lãnh đạo ký",
+      "subject": "ký chữ ký điện tử đối với giấy chuyển tuyến như nào?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18701",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21500/h%C6%B0%E1%BB%9Bng%20d%E1%BA%ABn%20in%20gi%E1%BA%A5y%20chuy%E1%BB%83n%20tuy%E1%BA%BFn.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18700",
+      "query": "Cho mình hỏi quản lý dịch truyền ở đâu được không?",
+      "expected_issue_id": "18700",
+      "reference_answer": "quản lý dịch truyền ở đâu\n\nModule Hành chính => menu => quản lý dịch truyền",
+      "subject": "quản lý dịch truyền ở đâu ",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18700",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21501/qu%E1%BA%A3n%20l%C3%BD%20d%E1%BB%8Bch%20truy%E1%BB%81n.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18696",
+      "query": "Cho mình hỏi thêm cấu hình quyền lợi thẻ bhyt được không?",
+      "expected_issue_id": "18696",
+      "reference_answer": "thêm cấu hình quyền lợi thẻ BHYT\n\nmodul hệ thống --> cấu hình quyền lợi thẻ BHYT --> bhyt chuột phải danh sách mã thẻ --> thêm",
+      "subject": "thêm cấu hình quyền lợi thẻ BHYT",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18696",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18695",
+      "query": "Tại sao bác sĩ không thấy giấy khám bệnh vào viện của bệnh nhân?",
+      "expected_issue_id": "18695",
+      "reference_answer": "Tại sao bác sĩ không thấy giấy khám bệnh vào viện của bệnh nhân\n\nTại vì bệnh nhân được chỉ định vào phòng khám của bác sĩ là được chỉ định đi khám kết hợp nên không in được",
+      "subject": "Tại sao bác sĩ không thấy giấy khám bệnh vào viện của bệnh nhân",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18695",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18694",
+      "query": "Cách thêm lời dặn của bác sĩ trong đơn thuốc?",
+      "expected_issue_id": "18694",
+      "reference_answer": "Cách thêm lời dặn của bác sĩ trong đơn thuốc\n\nVào module khám bệnh hoặc điều trị -> menu -> Danh sách lời dặn bác sĩ -> Thêm -> lưu",
+      "subject": "Cách thêm lời dặn của bác sĩ trong đơn thuốc",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18694",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18692",
+      "query": "làm sao để xóa dịch vụ khác của bệnh nhân đã ra viện?",
+      "expected_issue_id": "18692",
+      "reference_answer": "làm sao để xóa dịch vụ khác của bệnh nhân đã ra viện\n\nMở lại bệnh án bệnh nhân => sửa hồ sơ rồi xóa hoặc vào modul viện phí chọn dich vụ chuột phải ==> chuyển số lượng về 0",
+      "subject": "làm sao để xóa dịch vụ khác của bệnh nhân đã ra viện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18692",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18691",
+      "query": "làm sao để kho ngoại trú vào kiểm tra được bác sỹ vào chiếm kho hay chưa hoàn tất?",
+      "expected_issue_id": "18691",
+      "reference_answer": "làm sao để kho ngoại trú vào kiểm tra được bác sỹ vào chiếm kho hay chưa hoàn tất\n\nkho thuốc ngoại trú -> chọn danh sách -> danh sách thuốc trong kho -> chọn thuốc -> chuột phải vào thuốc đó -> chọn danh sách phiếu chờ xuất là được",
+      "subject": "làm sao để kho ngoại trú vào kiểm tra được bác sỹ vào chiếm kho hay chưa hoàn tất",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18691",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18690",
+      "query": "Cho mình hỏi bổ sung thẻ bhyt đối tượng nội trú được không?",
+      "expected_issue_id": "18690",
+      "reference_answer": "Bổ sung thẻ BHYT đối tượng nội trú\n\nChọn module đối tượng nội trú -> click chuột trái 2 lần vào bệnh nhân muốn bổ sung thẻ -> thêm thông tin thẻ bảo hiểm -> chuyển đối tượng từ viện phí sang bảo hiểm \n-> ấn lưu",
+      "subject": "Bổ sung thẻ BHYT đối tượng nội trú",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18690",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18689",
+      "query": "Cho mình hỏi chuyển loại bệnh án được không?",
+      "expected_issue_id": "18689",
+      "reference_answer": "Chuyển loại bệnh án\n\nVào module điều trị -> chọn tên bệnh nhân -> chọn bệnh án -> chọn menu -> chọn chuyển loại bệnh án -> chọn loại bệnh án muốn chuyển",
+      "subject": "Chuyển loại bệnh án",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18689",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18688",
+      "query": "Tại sao khi kê đơn thuốc trong điều trị nhưng thời gian y lệnh hiển thị không đúng hiện tại?",
+      "expected_issue_id": "18688",
+      "reference_answer": "Tại sao khi kê đơn thuốc trong điều trị nhưng thời gian y lệnh hiển thị không đúng hiện tại?\n\nThời gian y lệnh hiển thị trên phiếu kê đơn thuốc sẽ hiển thị theo thời gian phiếu điều trị tương ứng",
+      "subject": "Tại sao khi kê đơn thuốc trong điều trị nhưng thời gian y lệnh hiển thị không đúng hiện tại?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18688",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18687",
+      "query": "Vì sao lúc có thể sửa được giờ phiếu điều trị , lúc thì không?",
+      "expected_issue_id": "18687",
+      "reference_answer": "Vì sao lúc có thể sửa được giờ phiếu điều trị , lúc thì không ?\n\nKhi user tạo phiếu điều trị và chỉ điền các thông tin cơ bản như tình trạng bệnh , chỉ số sinh tồn của bệnh nhân thì có thể sửa\nKhi trên phiếu điều trị có các chỉ định ( xét nghiệm , thuốc vật tư,...) thì sẽ không sửa giờ được nữa",
+      "subject": "Vì sao lúc có thể sửa được giờ phiếu điều trị , lúc thì không ?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18687",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18686",
+      "query": "Tại sao khi xử trí ra viện phần mềm lại báo tổng số ngày giường lớn hơn số ngày điều trị?",
+      "expected_issue_id": "18686",
+      "reference_answer": "Tại sao khi xử trí ra viện phần mềm lại báo tổng số ngày giường lớn hơn số ngày điều trị.\n\nDo user đang kê số lượng ngày giường vượt qua số ngày điều trị.",
+      "subject": "Tại sao khi xử trí ra viện phần mềm lại báo tổng số ngày giường lớn hơn số ngày điều trị.",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18686",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18685",
+      "query": "Tại sao khi xử trí phần mềm lại báo có dịch vụ khác có thời gian y lệnh lớn hơn thời gian xử trí ra viện?",
+      "expected_issue_id": "18685",
+      "reference_answer": "Tại sao khi xử trí phần mềm lại báo có dịch vụ khác có thời gian y lệnh lớn hơn thời gian xử trí ra viện\n\nVì ngày giường cuối cùng bác sĩ quên chưa ghi ngày ra -> nên hệ thống mặc định là 23h59 của ngày hôm đó -> nên sẽ phải ấn vào dịch vụ ngày giường ghi thời gian ra nhỏ hơn thời gian xử trí.",
+      "subject": "Tại sao khi xử trí phần mềm lại báo có dịch vụ khác có thời gian y lệnh lớn hơn thời gian xử trí ra viện",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18685",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18684",
+      "query": "Tại sao không thể tạo phiếu bổ sung cơ số tủ trực?",
+      "expected_issue_id": "18684",
+      "reference_answer": "Tại sao không thể tạo phiếu bổ sung cơ số tủ trực\n\nVì trước đó còn một phiếu chưa được kho phát xuất thuốc nên không thể tổng hợp thêm",
+      "subject": "Tại sao không thể tạo phiếu bổ sung cơ số tủ trực",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18684",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18683",
+      "query": "Tại sao khi bác sĩ kê đơn rồi lại không thấy đơn thuốc ở kho thuốc ngoại trú?",
+      "expected_issue_id": "18683",
+      "reference_answer": "Tại sao khi bác sĩ kê đơn rồi lại không thấy đơn thuốc ở kho thuốc ngoại trú ?\n\nKế toán phải duyệt thanh toán thì đơn thuốc của bệnh nhân mới hiện thị ở kho thuốc ngoại trú.",
+      "subject": "Tại sao khi bác sĩ kê đơn rồi lại không thấy đơn thuốc ở kho thuốc ngoại trú ?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18683",
+      "attachment_urls": []
+    },
+    {
+      "case_id": "ticket_18680",
+      "query": "Cho mình hỏi muốn chuyển phòng khám cho bệnh nhân được không?",
+      "expected_issue_id": "18680",
+      "reference_answer": "Muốn chuyển phòng khám cho bệnh nhân?\n\nVào Module Khám bệnh --> Chọn BN cần chuyển --> Chọn tab \"Xử trí\" --> Hình thức xử trí chọn \"Chuyển phòng khám\" --> Xử trí",
+      "subject": "Muốn chuyển phòng khám cho bệnh nhân?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18680",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21498/z6570673739469_c2f3f3bdb4ee59c5da52a347423e32f6.jpg"
+      ]
+    },
+    {
+      "case_id": "ticket_18678",
+      "query": "Tại sao khi in đơn thuốc không hiện ngày tái khám?",
+      "expected_issue_id": "18678",
+      "reference_answer": "Tại sao khi in đơn thuốc không hiện ngày tái khám?\n\nKhi chỉ định thuốc, cần điền mục \"Ngày tái khám\" trên mục thông tin chỉ định thuốc. Nếu không điền mục này thì khi in phiếu sẽ không hiện",
+      "subject": "Tại sao khi in đơn thuốc không hiện ngày tái khám?",
+      "source_url": "http://co.ehc.vn:81/redmine/issues/18678",
+      "attachment_urls": [
+        "http://co.ehc.vn:81/redmine/attachments/download/21497/z6569230961522_0e50965478e18d6ffea27d3d4f4115d9.jpg"
+      ]
+    }
+  ]
+}

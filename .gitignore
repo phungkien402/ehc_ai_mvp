@@ -1,0 +1,38 @@
+# Secrets
+.env
+*.env
+*.key
+*.pem
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Node
+apps/dashboard-ui/node_modules/
+apps/dashboard-ui/dist/
+
+# Qdrant data (local vector DB storage)
+qdrant_data/
+qdrant_storage/
+
+# Logs
+logs/
+*.log
+*.stdout.log
+
+# Temp files
+temp/
+*.tmp
+
+# System tokens
+system/
+
+# OS
+.DS_Store
+Thumbs.db

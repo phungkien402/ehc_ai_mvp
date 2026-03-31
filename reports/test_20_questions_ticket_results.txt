@@ -1,0 +1,23 @@
+Generated at: 2026-03-29T13:50:54
+Format: question -> ticket
+
+01. cách in pttt báo cáo theo tháng -> 19135
+02. gộp mã bệnh nhân trong module đón tiếp -> 18568
+03. lỗi kết nối cơ sở dữ liệu mã E3 -> 17895
+04. cách kiểm tra tồn kho thuốc -> 18691
+05. làm sao tạo phiếu thu viện phí -> 18509
+06. in bảng kê chi tiết thuốc cho bệnh nhân -> N/A
+07. không tìm thấy phần mềm khi mở máy trạm -> 18340
+08. cách chuyển khoa cho bệnh nhân nội trú -> 18502
+09. hủy phiếu thu đã lập nhầm -> 18669
+10. đổi mật khẩu tài khoản người dùng -> 18404
+11. sửa thông tin hành chính bệnh nhân -> 18402
+12. in hóa đơn viện phí bị sai thông tin -> 17800
+13. khóa hồ sơ bệnh án đã hoàn tất -> 17800
+14. mở lại hồ sơ bệnh án đã khóa -> 17813
+15. không ping được tới máy chủ -> 17895
+16. lỗi form in bị đen -> 17799
+17. cách xuất excel danh sách bệnh nhân -> 18268
+18. tạo lịch khám cho bác sĩ -> 18380
+19. xóa chỉ định cận lâm sàng nhập nhầm -> 17815
+20. cách tra cứu lịch sử khám bệnh -> 18459

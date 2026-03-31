@@ -1,0 +1,2 @@
+langgraph==0.0.60
+-r ../../shared/py/requirements.txt

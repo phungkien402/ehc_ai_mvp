@@ -1,0 +1,80 @@
+flowchart TD
+    subgraph USER["User Interface"]
+        TG["Telegram Bot\napps/telegram_bot/bot.py"]
+    end
+
+    subgraph API["API Gateway :8000\napps/api_gateway"]
+        ASK["POST /api/v1/ask"]
+        HEALTH["GET /api/v1/health"]
+    end
+
+    subgraph GRAPH["LangGraph Self-RAG\napps/agent_runtime/app/graph"]
+        START((START))
+        extract_ocr_if_image["extract_ocr_if_image\nOCR + merge query"]
+        agent["agent\ncall_agent()"]
+        should_continue{{"should_continue"}}
+        tools["tools\nToolNode(search_faq_tool)"]
+        grade_documents["grade_documents\nLLM + heuristic grader"]
+        route_after_grading{{"route_after_grading"}}
+        rewrite_query["rewrite_query\nquery rewrite loop"]
+        generate_final_answer["generate_final_answer\nfinal synthesis / fallback"]
+        END((END))
+    end
+
+    subgraph INFRA["Infrastructure"]
+        OLLAMA_CHAT["Ollama Chat\nqwen2.5:14b\nlocalhost:11434"]
+        OLLAMA_VIS["Ollama Vision\nqwen3.5:4b\nlocalhost:11434"]
+        OLLAMA_EMB["Ollama Embeddings\nbge-m3\nlocalhost:11434"]
+        QDRANT["Qdrant\ncollection: ehc_faq\nlocalhost:6333"]
+        GPU["GPU Host\n(Ollama runtime)"]
+    end
+
+    subgraph INGEST["Ingestion Pipeline\npipelines/ingestion"]
+        REDMINE["Redmine issues\ninclude=attachments,custom_fields"]
+        CHUNK["FAQChunker"]
+        EMBED["Embed batches"]
+        UPSERT["Qdrant upsert"]
+    end
+
+    TG --> ASK
+    ASK --> START
+    START --> extract_ocr_if_image
+    extract_ocr_if_image --> agent
+    agent --> should_continue
+    should_continue -->|"continue"| tools
+    should_continue -->|"end"| generate_final_answer
+    tools --> grade_documents
+    grade_documents --> route_after_grading
+    route_after_grading -->|"generate"| generate_final_answer
+    route_after_grading -->|"rewrite"| rewrite_query
+    rewrite_query --> agent
+    generate_final_answer --> END
+    END --> ASK
+    ASK --> TG
+
+    extract_ocr_if_image --> OLLAMA_VIS
+    agent --> OLLAMA_CHAT
+    grade_documents --> OLLAMA_CHAT
+    rewrite_query --> OLLAMA_CHAT
+    tools --> OLLAMA_EMB
+    OLLAMA_EMB --> QDRANT
+
+    OLLAMA_CHAT -. tunnel .-> GPU
+    OLLAMA_VIS -. tunnel .-> GPU
+    OLLAMA_EMB -. tunnel .-> GPU
+
+    REDMINE --> CHUNK --> EMBED --> UPSERT --> QDRANT
+
+    classDef userNode fill:#1f77b4,stroke:#1a5f8a,color:#fff
+    classDef apiNode fill:#3f51b5,stroke:#2c3e94,color:#fff
+    classDef graphNode fill:#2e8b57,stroke:#1f6d43,color:#fff
+    classDef decisionNode fill:#d4a017,stroke:#9a730f,color:#fff
+    classDef infraNode fill:#cc6b49,stroke:#9c4f34,color:#fff
+    classDef ingestNode fill:#6b8e23,stroke:#4f6b18,color:#fff
+
+    class TG userNode
+    class ASK,HEALTH apiNode
+    class START,extract_ocr_if_image,agent,tools,grade_documents,rewrite_query,generate_final_answer,END graphNode
+    class should_continue,route_after_grading decisionNode
+    class OLLAMA_CHAT,OLLAMA_VIS,OLLAMA_EMB,QDRANT,GPU infraNode
+    class REDMINE,CHUNK,EMBED,UPSERT ingestNode

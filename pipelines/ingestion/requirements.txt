@@ -1,0 +1,2 @@
+-r ../../shared/py/requirements.txt
+python-redmine==1.5.3
