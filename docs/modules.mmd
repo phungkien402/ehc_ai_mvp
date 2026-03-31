@@ -1,0 +1,104 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1e3a5f', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a1f3a', 'lineColor': '#5b9bd5', 'fontFamily': 'Segoe UI, Arial, sans-serif', 'fontSize': '15px'}}}%%
+flowchart TD
+
+    %% ── LAYER 0: Người dùng ────────────────────────────────────
+    USER["👤 Nhân viên IT\n(Telegram / Dashboard)"]
+
+    %% ── LAYER 1: Giao diện ─────────────────────────────────────
+    subgraph L1["LAYER 1 — Giao diện người dùng"]
+        direction LR
+        BOT["🤖 telegram_bot/bot.py\n• Long Polling\n• Image cache 5'\n• Follow-up detect\n• Format HTML answer"]
+        UI["📊 dashboard-ui/ (React+Vite)\n• System Overview\n• Live Logs (WS)\n• Visual Workflow (Mermaid)\n• Vision Test (OCR/QA)"]
+    end
+
+    %% ── LAYER 2: API Gateway ────────────────────────────────────
+    subgraph L2["LAYER 2 — API Gateway  :8000"]
+        direction LR
+        GW_R["api/routes.py\nPOST /ask\nGET /health\nWS /logs/stream"]
+        GW_S["core/session_memory.py\nTTL 2h · 2000 sessions\nfollow-up context"]
+        GW_SC["schemas.py\nAskRequest · AskResponse"]
+    end
+
+    %% ── LAYER 3: Agent Runtime ──────────────────────────────────
+    subgraph L3["LAYER 3 — Agent Runtime  :8001  (LangGraph Self-RAG)"]
+        direction LR
+        AG_WF["graph/workflow.py\nStateGraph\nbuild + compile"]
+        AG_N["graph/nodes.py\nextract_ocr_if_image\ncall_agent\ngrade_documents\nrewrite_query\ngenerate_final_answer"]
+        AG_R["graph/router.py\nroute_after_ocr\nshould_continue\nroute_after_grading"]
+        AG_T["graph/tools.py\nsearch_faq_tool\nlexical_overlap_ratio"]
+        AG_S["graph/state.py\nWorkflowState\nTypedDict"]
+        AG_TR["graph/tracing.py\nemit_trace"]
+        AG_C["core/config.py\nOLLAMA_LLM_MODEL\nQDRANT_URL"]
+    end
+
+    %% ── LAYER 4: Thư viện dùng chung ───────────────────────────
+    subgraph L4["LAYER 4 — shared/py/  (Thư viện dùng chung)"]
+        direction LR
+        SH_OL["clients/ollama_client.py\nOllamaChat · OllamaVision\nembedding helper"]
+        SH_QD["clients/qdrant_client.py\nQdrantSearchClient\nvector search"]
+        SH_MD["models/faq.py\nFAQChunk dataclass"]
+        SH_TX["utils/text.py\nnormalize_vietnamese\nmerge_query_with_ocr"]
+        SH_LG["utils/logging.py\nJSON structured logger"]
+    end
+
+    %% ── LAYER 5: Ingestion Pipeline ────────────────────────────
+    subgraph L5["LAYER 5 — pipelines/ingestion/  (cron / thủ công)"]
+        direction LR
+        IN_SRC["sources/redmine_client.py\nREST paginated\n100 issues/page"]
+        IN_CHK["processors/chunker.py\nFAQChunker\n500 chars · overlap 100"]
+        IN_SNK["sinks/qdrant_writer.py\nupsert · batch insert"]
+        IN_CFG["core/config.py\nREDMINE_URL · API_KEY"]
+        IN_SRC --> IN_CHK --> IN_SNK
+    end
+
+    %% ── LAYER 6: Infrastructure ─────────────────────────────────
+    subgraph L6["LAYER 6 — Infrastructure"]
+        direction LR
+        INF_DC["🐳 docker-compose.yml\northestrates all services"]
+        INF_QD["🗄️ Qdrant  :6333\nehc_faq · cosine · 1024-dim"]
+        INF_OL["⚙️ Ollama  :11435  (SSH Tunnel)\nqwen2.5:14b · qwen2.5vl:7b\nbge-m3:latest"]
+        INF_RM["📋 Redmine  co.ehc.vn:81\nticket database"]
+    end
+
+    %% ── LAYER 7: Tests ──────────────────────────────────────────
+    subgraph L7["LAYER 7 — tests/"]
+        T1["test_agent.py"]
+        T2["test_ingestion.py"]
+    end
+
+    %% ── Luồng dữ liệu chính ─────────────────────────────────────
+    USER -->|Telegram| BOT
+    USER -->|Browser| UI
+    BOT -->|HTTP /ask| GW_R
+    UI -->|REST / WS| GW_R
+    GW_R <--> GW_S
+    GW_R -->|HTTP /invoke| AG_WF
+    AG_WF --> AG_N & AG_R & AG_T
+    AG_T -->|embed+search| SH_QD
+    AG_N -->|OCR/LLM| SH_OL
+    IN_CHK -->|embed| SH_OL
+    IN_SNK -->|upsert| SH_QD
+    SH_QD --- INF_QD
+    SH_OL --- INF_OL
+    IN_SRC -->|REST API| INF_RM
+
+    %% Styles
+    classDef userCls fill:#1a3a5c,stroke:#0d2340,color:#fff
+    classDef botCls fill:#1e5f74,stroke:#0e3444,color:#fff
+    classDef uiCls fill:#2e7d32,stroke:#1b5e20,color:#fff
+    classDef gwCls fill:#154360,stroke:#0e2d40,color:#fff
+    classDef agCls fill:#1d3557,stroke:#0a1f3a,color:#fff
+    classDef sharedCls fill:#4a235a,stroke:#2e1638,color:#fff
+    classDef pipelineCls fill:#1b4332,stroke:#0d2218,color:#fff
+    classDef infraCls fill:#7b2d00,stroke:#5a2000,color:#fff
+    classDef testCls fill:#5d4037,stroke:#3e2723,color:#fff
+
+    class USER userCls
+    class BOT botCls
+    class UI uiCls
+    class GW_R,GW_S,GW_SC gwCls
+    class AG_WF,AG_N,AG_R,AG_T,AG_S,AG_TR,AG_C agCls
+    class SH_OL,SH_QD,SH_MD,SH_TX,SH_LG sharedCls
+    class IN_SRC,IN_CHK,IN_SNK,IN_CFG pipelineCls
+    class INF_DC,INF_QD,INF_OL,INF_RM infraCls
+    class T1,T2 testCls
