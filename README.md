@@ -4,7 +4,7 @@ Vietnamese helpdesk FAQ chatbot powered by RAG (Retrieval-Augmented Generation).
 
 **Stack:**
 - **Data**: Redmine → Qdrant vector database (bge-m3 embeddings)
-- **LLM**: Ollama over SSH tunnel (`qwen2.5:14b` main answer, `qwen3.5:4b` OCR, `bge-m3` embeddings)
+- **LLM**: Ollama over SSH tunnel (`qwen2.5:14b` main answer, `qwen2.5vl:7b` OCR, `bge-m3` embeddings)
 - **Workflow**: LangGraph Self-RAG with rewrite loop and grader
 - **API**: FastAPI with async support
 - **Deploy**: Docker Compose (Qdrant + Redis + API)
