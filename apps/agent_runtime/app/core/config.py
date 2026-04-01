@@ -13,6 +13,9 @@ class RuntimeConfig(BaseSettings):
         extra="ignore",
     )
     
+    # Model provider
+    MODEL_PROVIDER: str = os.getenv("MODEL_PROVIDER", "ollama").lower()
+
     # Ollama
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_EMBEDDING_MODEL: str = os.getenv("OLLAMA_EMBEDDING_MODEL", "bge-m3:latest")
@@ -20,6 +23,13 @@ class RuntimeConfig(BaseSettings):
     OLLAMA_LLM_MODEL: str = "qwen2.5:14b"
     OLLAMA_GRADER_MODEL: str = "qwen2.5:14b"
     OLLAMA_REWRITE_MODEL: str = "qwen2.5:14b"
+
+    # vLLM (OpenAI-compatible API)
+    VLLM_BASE_URL: str = os.getenv("VLLM_BASE_URL", "http://localhost:8000")
+    VLLM_LLM_URL: str = os.getenv("VLLM_LLM_URL", "http://localhost:8000")
+    VLLM_VISION_URL: str = os.getenv("VLLM_VISION_URL", "http://localhost:8001")
+    VLLM_EMBEDDING_URL: str = os.getenv("VLLM_EMBEDDING_URL", "http://localhost:8001")
+    VLLM_API_KEY: str = os.getenv("VLLM_API_KEY", "")
     
     # Qdrant
     QDRANT_URL: str = "http://localhost:6333"

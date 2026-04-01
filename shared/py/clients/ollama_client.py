@@ -3,11 +3,40 @@
 import base64
 import logging
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+
+def _provider_mode() -> str:
+    return (os.getenv("MODEL_PROVIDER", "ollama") or "ollama").strip().lower()
+
+
+def _is_vllm_mode() -> bool:
+    return _provider_mode() == "vllm"
+
+
+def _vllm_headers() -> dict:
+    api_key = (os.getenv("VLLM_API_KEY", "") or "").strip()
+    if not api_key:
+        return {}
+    return {"Authorization": f"Bearer {api_key}"}
+
+
+def _extract_openai_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: List[str] = []
+        for item in content:
+            if isinstance(item, dict):
+                text_val = item.get("text")
+                if isinstance(text_val, str) and text_val.strip():
+                    parts.append(text_val.strip())
+        return "\n".join(parts).strip()
+    return str(content).strip()
 
 DEFAULT_OCR_PROMPT = (
     "You are analyzing a Vietnamese hospital software screenshot. "
@@ -24,11 +53,27 @@ DEFAULT_OCR_PROMPT = (
 class OllamaEmbeddings:
     """Wrapper for Ollama embedding model."""
     
-    def __init__(self, base_url: str = None, model: str = "bge-m3", timeout: int = 60):
-        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    def __init__(self, base_url: str = None, model: str = "bge-m3", timeout: int = 60, provider: Optional[str] = None):
+        self.provider = (provider or _provider_mode()).strip().lower()
+        if base_url:
+            selected_base_url = base_url
+        elif self.provider == "vllm":
+            selected_base_url = (
+                os.getenv("VLLM_EMBEDDING_URL")
+                or os.getenv("VLLM_BASE_URL")
+                or "http://localhost:8001"
+            )
+        else:
+            selected_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.base_url = selected_base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
-        logger.info(f"Initialized OllamaEmbeddings: {self.base_url} (model: {model})")
+        logger.info(
+            "Initialized OllamaEmbeddings: %s (model: %s, provider: %s)",
+            self.base_url,
+            model,
+            self.provider,
+        )
     
     def embed_query(self, text: str) -> List[float]:
         """
@@ -44,6 +89,19 @@ class OllamaEmbeddings:
             RuntimeError if request fails or timeout
         """
         try:
+            if self.provider == "vllm":
+                response = requests.post(
+                    f"{self.base_url}/v1/embeddings",
+                    json={"model": self.model, "input": text},
+                    headers=_vllm_headers(),
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                data = response.json()
+                embedding = data["data"][0]["embedding"]
+                logger.debug(f"Embedded text: {len(text)} chars -> {len(embedding)} dims")
+                return embedding
+
             response = requests.post(
                 f"{self.base_url}/api/embed",
                 json={"model": self.model, "input": text},
@@ -83,6 +141,23 @@ class OllamaEmbeddings:
             List of 1024-dim vectors
         """
         try:
+            if self.provider == "vllm":
+                response = requests.post(
+                    f"{self.base_url}/v1/embeddings",
+                    json={"model": self.model, "input": texts},
+                    headers=_vllm_headers(),
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                data = response.json()
+                indexed = sorted(
+                    data.get("data", []),
+                    key=lambda item: int(item.get("index", 0)),
+                )
+                embeddings = [item.get("embedding", []) for item in indexed]
+                logger.info(f"Batch embedded {len(texts)} texts -> {len(embeddings)} vectors")
+                return embeddings
+
             response = requests.post(
                 f"{self.base_url}/api/embed",
                 json={"model": self.model, "input": texts},
@@ -113,11 +188,27 @@ class OllamaEmbeddings:
 class OllamaVision:
     """Wrapper for Ollama vision model (OCR on images)."""
     
-    def __init__(self, base_url: str = None, model: str = "qwen3.5:9b", timeout: int = 40):
-        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    def __init__(self, base_url: str = None, model: str = "qwen3.5:9b", timeout: int = 40, provider: Optional[str] = None):
+        self.provider = (provider or _provider_mode()).strip().lower()
+        if base_url:
+            selected_base_url = base_url
+        elif self.provider == "vllm":
+            selected_base_url = (
+                os.getenv("VLLM_VISION_URL")
+                or os.getenv("VLLM_BASE_URL")
+                or "http://localhost:8001"
+            )
+        else:
+            selected_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.base_url = selected_base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
-        logger.info(f"Initialized OllamaVision: {self.base_url} (model: {model})")
+        logger.info(
+            "Initialized OllamaVision: %s (model: %s, provider: %s)",
+            self.base_url,
+            model,
+            self.provider,
+        )
     
     def extract_text_from_image(self, image_bytes: bytes, prompt: str = DEFAULT_OCR_PROMPT) -> str:
         """
@@ -137,6 +228,37 @@ class OllamaVision:
         try:
             # Encode image to base64
             image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+            if self.provider == "vllm":
+                data_uri = f"data:image/png;base64,{image_b64}"
+                response = requests.post(
+                    f"{self.base_url}/v1/chat/completions",
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {"url": data_uri},
+                                    },
+                                ],
+                            }
+                        ],
+                        "temperature": 0,
+                        "max_tokens": 512,
+                    },
+                    headers=_vllm_headers(),
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                extracted_text = _extract_openai_text(content)
+                logger.info(f"OCR extracted {len(extracted_text)} chars from image")
+                return extracted_text
             
             # Call vision endpoint
             response = requests.post(
@@ -172,11 +294,27 @@ class OllamaVision:
 class OllamaChat:
     """Wrapper for Ollama chat/text generation model."""
 
-    def __init__(self, base_url: str = None, model: str = "qwen3.5:9b", timeout: int = 40):
-        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    def __init__(self, base_url: str = None, model: str = "qwen3.5:9b", timeout: int = 40, provider: Optional[str] = None):
+        self.provider = (provider or _provider_mode()).strip().lower()
+        if base_url:
+            selected_base_url = base_url
+        elif self.provider == "vllm":
+            selected_base_url = (
+                os.getenv("VLLM_LLM_URL")
+                or os.getenv("VLLM_BASE_URL")
+                or "http://localhost:8000"
+            )
+        else:
+            selected_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.base_url = selected_base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
-        logger.info(f"Initialized OllamaChat: {self.base_url} (model: {model})")
+        logger.info(
+            "Initialized OllamaChat: %s (model: %s, provider: %s)",
+            self.base_url,
+            model,
+            self.provider,
+        )
 
     def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
@@ -198,6 +336,27 @@ class OllamaChat:
         messages.append({"role": "user", "content": prompt})
 
         try:
+            if self.provider == "vllm":
+                response = requests.post(
+                    f"{self.base_url}/v1/chat/completions",
+                    json={
+                        "model": self.model,
+                        "messages": messages,
+                        "temperature": 0.2,
+                        "max_tokens": 220,
+                    },
+                    headers=_vllm_headers(),
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                data = response.json()
+                content = _extract_openai_text(
+                    data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                )
+                if not content:
+                    raise RuntimeError("Empty response from vLLM chat model")
+                return content
+
             response = requests.post(
                 f"{self.base_url}/api/chat",
                 json={

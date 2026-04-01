@@ -24,9 +24,17 @@ class IngestionConfig(BaseSettings):
     QDRANT_COLLECTION: str = "ehc_faq"
     QDRANT_VECTOR_SIZE: int = 1024
     
+    # Model provider
+    MODEL_PROVIDER: str = os.getenv("MODEL_PROVIDER", "ollama").lower()
+
     # Ollama
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_EMBEDDING_MODEL: str = "bge-m3"
+
+    # vLLM (OpenAI-compatible API)
+    VLLM_BASE_URL: str = os.getenv("VLLM_BASE_URL", "http://localhost:8000")
+    VLLM_EMBEDDING_URL: str = os.getenv("VLLM_EMBEDDING_URL", "http://localhost:8001")
+    VLLM_API_KEY: str = os.getenv("VLLM_API_KEY", "")
     
     # Ingestion params
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "500"))

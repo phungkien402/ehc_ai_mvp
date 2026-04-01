@@ -51,7 +51,11 @@ def _is_llm_available() -> bool:
         return _llm_health_cached_value
 
     try:
-        response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=2)
+        provider = (config.MODEL_PROVIDER or "ollama").strip().lower()
+        if provider == "vllm":
+            response = requests.get(f"{config.VLLM_LLM_URL.rstrip('/')}/v1/models", timeout=2)
+        else:
+            response = requests.get(f"{config.OLLAMA_BASE_URL.rstrip('/')}/api/tags", timeout=2)
         _llm_health_cached_value = response.status_code == 200
     except Exception:
         _llm_health_cached_value = False

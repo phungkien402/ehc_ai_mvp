@@ -35,6 +35,73 @@ Wait for all services to be healthy:
 ./scripts/start_ollama_tunnel.sh
 ```
 
+### 2.2. Start vLLM Canary (10%)
+
+This starts API Gateway in native process mode with deterministic canary routing.
+
+```bash
+# Requires local forwards:
+# 127.0.0.1:18000 -> vLLM LLM
+# 127.0.0.1:18001 -> vLLM Embedding/Vision
+./scripts/start_canary_rollout.sh
+```
+
+Verify sticky routing:
+
+```bash
+python3 scripts/verify_canary_routing.py --runs 10 --rollout-percent 10
+```
+
+Rollback canary quickly:
+
+```bash
+./scripts/rollback_canary.sh
+python3 scripts/verify_canary_routing.py --runs 6 --rollout-percent 0
+```
+
+### 2.3. Decommission Ollama Path (after full vLLM cutover)
+
+```bash
+./scripts/decommission_ollama.sh
+```
+
+This will:
+- archive rollout logs to `logs/archive/`
+- stop local Ollama SSH tunnel
+- restart API in `MODEL_PROVIDER=vllm` mode
+
+One-command rollback back to Ollama:
+
+```bash
+./scripts/rollback_to_ollama.sh
+```
+
+### 2.4. Unified Daily Operations
+
+Start all runtime services (API + Telegram bot):
+
+```bash
+# Full vLLM mode
+./scripts/start_services.sh vllm
+
+# Canary mode (default rollout from env/script)
+./scripts/start_services.sh canary
+
+# Full Ollama mode
+./scripts/start_services.sh ollama
+```
+
+Status / stop / log cleanup:
+
+```bash
+./scripts/status_services.sh
+./scripts/stop_services.sh
+./scripts/clean_logs.sh
+```
+
+Daily checklist runbook:
+- `docs/OPS_RUNBOOK_DAILY.md`
+
 Override target when you rent a new GPU:
 
 ```bash

@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import hashlib
 import logging
 import os
 import re
@@ -90,6 +91,14 @@ def _parse_log_line(line: str, cursor: int) -> DashboardLogEntry:
 
 
 def _get_active_models() -> list[str]:
+    if config.MODEL_PROVIDER == "vllm":
+        configured = [
+            os.getenv("OLLAMA_LLM_MODEL", ""),
+            os.getenv("OLLAMA_VISION_MODEL", ""),
+            os.getenv("OLLAMA_EMBEDDING_MODEL", ""),
+        ]
+        return [name for name in dict.fromkeys(configured) if name]
+
     try:
         response = requests.get(
             f"{config.OLLAMA_BASE_URL}/api/ps",
@@ -116,6 +125,38 @@ def _tail_log_file(log_path: str, from_offset: int) -> tuple[list[str], int]:
         lines = f.readlines()
         new_offset = f.tell()
     return lines, new_offset
+
+
+def _sticky_rollout_key(request: AskRequest, session_key: str) -> str:
+    sticky = (config.ROLLOUT_STICKY_KEY or "session_id").strip().lower()
+    if sticky == "user_id":
+        return (request.user_id or session_key or "anonymous").strip() or "anonymous"
+    if sticky == "channel_user":
+        channel = (request.channel or "api").strip() or "api"
+        user_id = (request.user_id or "anonymous").strip() or "anonymous"
+        return f"{channel}:{user_id}"
+    return session_key or "anonymous"
+
+
+def _resolve_provider_for_request(request: AskRequest, session_key: str) -> tuple[str, int]:
+    base_provider = (config.MODEL_PROVIDER or "ollama").strip().lower()
+    if base_provider == "vllm":
+        return "vllm", 100
+
+    if not config.ROLLOUT_ENABLED:
+        return base_provider, -1
+
+    pct = max(0.0, min(float(config.ROLLOUT_PERCENT_VLLM), 100.0))
+    if pct <= 0:
+        return base_provider, -1
+    if pct >= 100:
+        return "vllm", 0
+
+    key = _sticky_rollout_key(request, session_key)
+    digest = hashlib.md5(key.encode("utf-8")).hexdigest()
+    bucket = int(digest[:8], 16) % 100
+    provider = "vllm" if bucket < pct else base_provider
+    return provider, bucket
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -154,6 +195,8 @@ async def ask_question(request: AskRequest):
             user_id = (request.user_id or "anonymous").strip() or "anonymous"
             session_key = f"{channel}:{user_id}"
 
+        selected_provider, rollout_bucket = _resolve_provider_for_request(request, session_key)
+
         history_context, last_source_hint = session_memory.build_context(session_key)
         enriched_query = session_memory.enrich_query(session_key, request.query)
 
@@ -163,6 +206,8 @@ async def ask_question(request: AskRequest):
         state = {
             "messages": [],
             "trace_id": uuid.uuid4().hex[:8],
+            "model_provider": selected_provider,
+            "rollout_bucket": rollout_bucket,
             "query_text": enriched_query,
             "image_bytes": image_bytes,
             "conversation_context": history_context,
@@ -186,7 +231,12 @@ async def ask_question(request: AskRequest):
             "duration_seconds": 0.0
         }
         
-        logger.info(f"Processing query: {request.query[:100]}")
+        logger.info(
+            "Processing query: %s | provider=%s | rollout_bucket=%s",
+            request.query[:100],
+            selected_provider,
+            rollout_bucket,
+        )
         result = await agent.ainvoke(state)
         
         # Format response
@@ -222,6 +272,8 @@ async def ask_question(request: AskRequest):
             rewritten_query=result.get("rewritten_query"),
             grading_reason=result.get("grading_reason"),
             ocr_text=result.get("ocr_text"),
+            provider=result.get("model_provider", selected_provider),
+            rollout_bucket=rollout_bucket if rollout_bucket >= 0 else None,
         )
     
     except Exception as e:
@@ -243,11 +295,8 @@ async def test_ocr(request: OCRRequest):
             raise HTTPException(status_code=400, detail=f"Invalid image_base64: {e}") from e
 
         selected_model = request.model or config.OLLAMA_VISION_MODEL
-        vision_client = OllamaVision(
-            base_url=config.OLLAMA_BASE_URL,
-            model=selected_model,
-            timeout=120,
-        )
+        vision_base_url = config.VLLM_VISION_URL if config.MODEL_PROVIDER == "vllm" else config.OLLAMA_BASE_URL
+        vision_client = OllamaVision(base_url=vision_base_url, model=selected_model, timeout=120)
         ocr_text = vision_client.extract_text_from_image(
             image_bytes=image_bytes,
             prompt=DEFAULT_OCR_PROMPT,
@@ -283,14 +332,20 @@ async def health_check():
         logger.warning(f"Qdrant health check failed: {e}")
     
     try:
-        embeddings = OllamaEmbeddings(base_url=config.OLLAMA_BASE_URL)
+        embedding_base_url = config.VLLM_EMBEDDING_URL if config.MODEL_PROVIDER == "vllm" else config.OLLAMA_BASE_URL
+        embeddings = OllamaEmbeddings(
+            base_url=embedding_base_url,
+            model=os.getenv("OLLAMA_EMBEDDING_MODEL", "bge-m3"),
+            provider=config.MODEL_PROVIDER,
+        )
         vector = embeddings.embed_query("test")
         ollama_ok = len(vector) == 1024
     except Exception as e:
-        logger.warning(f"Ollama health check failed: {e}")
+        logger.warning(f"Model provider health check failed: {e}")
     
     status = "ok" if (qdrant_ok and ollama_ok) else "degraded"
-    message = f"Qdrant: {'✓' if qdrant_ok else '✗'}, Ollama: {'✓' if ollama_ok else '✗'}"
+    provider_label = config.MODEL_PROVIDER.upper()
+    message = f"Qdrant: {'✓' if qdrant_ok else '✗'}, {provider_label}: {'✓' if ollama_ok else '✗'}"
     
     return HealthResponse(
         status=status,
@@ -314,7 +369,10 @@ async def dashboard_overview():
         qdrant_ok = False
 
     try:
-        response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=5)
+        if config.MODEL_PROVIDER == "vllm":
+            response = requests.get(f"{config.VLLM_LLM_URL.rstrip('/')}/v1/models", timeout=5)
+        else:
+            response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=5)
         response.raise_for_status()
         ollama_ok = True
     except Exception:

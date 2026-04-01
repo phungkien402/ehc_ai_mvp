@@ -31,7 +31,13 @@ def main():
         logger.info("=== Ingestion Pipeline Start ===")
         logger.info(f"Redmine: {config.REDMINE_URL}/{args.project}")
         logger.info(f"Qdrant: {config.QDRANT_URL}/{config.QDRANT_COLLECTION}")
-        logger.info(f"Ollama: {config.OLLAMA_BASE_URL} (model: {config.OLLAMA_EMBEDDING_MODEL})")
+        embedding_base_url = config.VLLM_EMBEDDING_URL if config.MODEL_PROVIDER == "vllm" else config.OLLAMA_BASE_URL
+        logger.info(
+            "Embedding provider: %s @ %s (model: %s)",
+            config.MODEL_PROVIDER,
+            embedding_base_url,
+            config.OLLAMA_EMBEDDING_MODEL,
+        )
         
         # Step 1: Fetch from Redmine
         logger.info("Step 1: Fetching FAQ from Redmine...")
@@ -57,7 +63,7 @@ def main():
             logger.info("Step 3: Embedding and upserting to Qdrant...")
             writer = QdrantWriter(
                 qdrant_url=config.QDRANT_URL,
-                ollama_url=config.OLLAMA_BASE_URL,
+                ollama_url=embedding_base_url,
                 collection_name=config.QDRANT_COLLECTION,
                 embedding_model=config.OLLAMA_EMBEDDING_MODEL,
                 batch_size=config.BATCH_SIZE

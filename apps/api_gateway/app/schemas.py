@@ -39,6 +39,8 @@ class AskResponse(BaseModel):
     rewritten_query: Optional[str] = None
     grading_reason: Optional[str] = None
     ocr_text: Optional[str] = None
+    provider: Optional[str] = None
+    rollout_bucket: Optional[int] = None
 
 
 class OCRResponse(BaseModel):

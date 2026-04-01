@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import sys
+from contextvars import ContextVar
 from typing import List
 
 from langchain_core.tools import tool
@@ -17,6 +18,7 @@ from shared.py.clients.qdrant_client import QdrantWrapper
 from shared.py.utils.text import normalize_vietnamese
 
 logger = logging.getLogger(__name__)
+_CURRENT_MODEL_PROVIDER: ContextVar[str | None] = ContextVar("current_model_provider", default=None)
 
 _STOPWORDS = {
     "cho", "cua", "voi", "tren", "duoc", "khong", "dang", "toi", "ban", "em", "anh", "chi", "bsi",
@@ -95,6 +97,15 @@ def lexical_overlap_ratio(query: str, content: str) -> float:
     return max(0.0, min(1.0, adjusted))
 
 
+def set_runtime_model_provider(provider: str | None) -> None:
+    if provider:
+        _CURRENT_MODEL_PROVIDER.set(provider.strip().lower())
+
+
+def get_runtime_model_provider() -> str:
+    return (_CURRENT_MODEL_PROVIDER.get() or config.MODEL_PROVIDER or "ollama").strip().lower()
+
+
 def search_faq_chunks(query: str) -> List[dict]:
     """Run vector retrieval without early threshold gating so the grader can decide relevance."""
 
@@ -102,10 +113,17 @@ def search_faq_chunks(query: str) -> List[dict]:
     if not cleaned_query:
         return []
 
+    provider = get_runtime_model_provider()
+    if provider == "vllm":
+        embedding_base_url = config.VLLM_EMBEDDING_URL
+    else:
+        embedding_base_url = config.OLLAMA_BASE_URL
+
     embeddings = OllamaEmbeddings(
-        base_url=config.OLLAMA_BASE_URL,
+        base_url=embedding_base_url,
         model=config.OLLAMA_EMBEDDING_MODEL,
         timeout=60,
+        provider=provider,
     )
     query_vector = embeddings.embed_query(cleaned_query)
 
@@ -164,12 +182,14 @@ def search_faq_tool(query: str) -> str:
     """Tra cứu các FAQ helpdesk liên quan tới câu hỏi hiện tại của người dùng."""
 
     try:
+        provider = get_runtime_model_provider()
         emit_trace(logger, "tools", "start", None, query=query[:120])
         chunks = search_faq_chunks(query)
         emit_trace(logger, "tools", "end", None, chunks=len(chunks), top_issue=(chunks[0].get("issue_id") if chunks else None))
         return json.dumps(
             {
                 "query": query,
+                "provider": provider,
                 "chunks": chunks,
             },
             ensure_ascii=False,

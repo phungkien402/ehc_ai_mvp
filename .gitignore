@@ -28,6 +28,7 @@ logs/
 
 # Temp files
 temp/
+tmp/
 *.tmp
 
 # System tokens

@@ -8,20 +8,42 @@ import uuid
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
+try:
+    from langchain_openai import ChatOpenAI
+except Exception:  # pragma: no cover - optional until vLLM deps are installed
+    ChatOpenAI = None
 
 sys.path.insert(0, "/home/phungkien/ehc_ai_mvp")
 
 from apps.agent_runtime.app.core.config import config
 from apps.agent_runtime.app.graph.state import WorkflowState
 from apps.agent_runtime.app.graph.tracing import emit_trace
-from apps.agent_runtime.app.graph.tools import lexical_overlap_ratio, parse_tool_payload
+from apps.agent_runtime.app.graph.tools import (
+    lexical_overlap_ratio,
+    parse_tool_payload,
+    set_runtime_model_provider,
+)
 from shared.py.clients.ollama_client import DEFAULT_OCR_PROMPT, OllamaChat, OllamaVision
 from shared.py.utils.text import merge_query_with_ocr, normalize_vietnamese
 
 logger = logging.getLogger(__name__)
 
 
-def _build_agent_model() -> ChatOllama:
+def _build_agent_model(provider_override: str | None = None):
+    provider = (provider_override or config.MODEL_PROVIDER or "ollama").strip().lower()
+    if provider == "vllm":
+        if ChatOpenAI is None:
+            raise RuntimeError(
+                "MODEL_PROVIDER=vllm requires langchain-openai. Run: pip install -r requirements.txt"
+            )
+        return ChatOpenAI(
+            model=config.OLLAMA_LLM_MODEL,
+            base_url=f"{config.VLLM_LLM_URL.rstrip('/')}/v1",
+            api_key=config.VLLM_API_KEY or "dummy",
+            temperature=0.1,
+            max_tokens=180,
+        )
+
     return ChatOllama(
         model=config.OLLAMA_LLM_MODEL,
         base_url=config.OLLAMA_BASE_URL,
@@ -341,10 +363,13 @@ def extract_ocr_if_image(state: WorkflowState) -> dict:
         }
     
     try:
+        provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+        vision_base_url = config.VLLM_VISION_URL if provider == "vllm" else config.OLLAMA_BASE_URL
         vision_client = OllamaVision(
-            base_url=config.OLLAMA_BASE_URL,
+            base_url=vision_base_url,
             model=config.OLLAMA_VISION_MODEL,
-            timeout=90
+            timeout=90,
+            provider=provider,
         )
         
         logger.info("Calling vision model for OCR...")
@@ -401,12 +426,35 @@ def call_agent(state: WorkflowState) -> dict:
     """Let the agent decide whether to call retrieval tools or answer directly."""
 
     active_query = state.get("active_query") or state.get("rewritten_query") or state.get("merged_query") or state.get("query_text", "")
+    provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+    set_runtime_model_provider(provider)
     conversation_context = (state.get("conversation_context") or "").strip()
     last_source_hint = (state.get("last_source_hint") or "").strip()
+    ocr_text = state.get("ocr_text") or "Không có"
     emit_trace(logger, "agent", "start", state, query=active_query[:120])
 
-    llm_with_tools = _build_agent_model().bind_tools(__import__("apps.agent_runtime.app.graph.tools", fromlist=["available_tools"]).available_tools)
-    ocr_text = state.get("ocr_text") or "Không có"
+    # vLLM OpenAI endpoint in this deployment rejects default tool_choice=auto.
+    # Use deterministic forced tool-call path so retrieval flow keeps working.
+    if provider == "vllm":
+        messages = list(state.get("messages", []))
+        if not messages:
+            user_payload = {
+                "original_user_question": state.get("query_text", ""),
+                "current_search_query": active_query,
+                "ocr_text": ocr_text,
+                "conversation_context": conversation_context or "Không có",
+                "last_source_hint": last_source_hint or "Không có",
+            }
+            user_message = HumanMessage(content=json.dumps(user_payload, ensure_ascii=False, indent=2))
+            response = _forced_search_tool_call(active_query)
+            emit_trace(logger, "agent", "end", state, tool_calls=1, outcome="forced_vllm")
+            return {"messages": [user_message, response]}
+
+        response = _forced_search_tool_call(active_query)
+        emit_trace(logger, "agent", "end", state, tool_calls=1, outcome="forced_vllm_follow_up")
+        return {"messages": [response]}
+
+    llm_with_tools = _build_agent_model(provider).bind_tools(__import__("apps.agent_runtime.app.graph.tools", fromlist=["available_tools"]).available_tools)
 
     system_prompt_spec = {
         "role": "internal_helpdesk_agent",
@@ -572,10 +620,13 @@ def grade_documents(state: WorkflowState) -> dict:
         "Return 'no' only if all retrieved documents are entirely irrelevant."
     )
 
+    provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+    llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
     grader = OllamaChat(
-        base_url=config.OLLAMA_BASE_URL,
+        base_url=llm_base_url,
         model=config.OLLAMA_GRADER_MODEL,
         timeout=60,
+        provider=provider,
     )
 
     grader_reason = None
@@ -667,10 +718,13 @@ def rewrite_query(state: WorkflowState) -> dict:
         "Return only the rewritten query, with no explanation."
     )
 
+    provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+    llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
     rewriter = OllamaChat(
-        base_url=config.OLLAMA_BASE_URL,
+        base_url=llm_base_url,
         model=config.OLLAMA_REWRITE_MODEL,
         timeout=60,
+        provider=provider,
     )
 
     rewritten_query = current_query
@@ -814,10 +868,13 @@ def generate_final_answer(state: WorkflowState) -> dict:
 
     final_answer = ""
     try:
+        provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+        llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
         chat_client = OllamaChat(
-            base_url=config.OLLAMA_BASE_URL,
+            base_url=llm_base_url,
             model=config.OLLAMA_LLM_MODEL,
-            timeout=120
+            timeout=120,
+            provider=provider,
         )
         response_prompt_spec = {
             "role": "internal_helpdesk_responder",

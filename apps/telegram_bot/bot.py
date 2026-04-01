@@ -41,7 +41,11 @@ API_TIMEOUT_SECONDS = int(os.getenv("TELEGRAM_API_TIMEOUT_SECONDS", "240"))
 API_RETRIES = int(os.getenv("TELEGRAM_API_RETRIES", "1"))
 RETRY_BACKOFF_SECONDS = float(os.getenv("TELEGRAM_API_RETRY_BACKOFF_SECONDS", "1.5"))
 REDMINE_API_KEY = os.getenv("REDMINE_API_KEY", "")
+REDMINE_URL = os.getenv("REDMINE_URL", "")
 MAX_IMAGE_SEND = int(os.getenv("TELEGRAM_MAX_IMAGE_SEND", "3"))
+TELEGRAM_STREAM_ENABLED = os.getenv("TELEGRAM_STREAM_ENABLED", "true").lower() == "true"
+TELEGRAM_STREAM_CHUNK_WORDS = int(os.getenv("TELEGRAM_STREAM_CHUNK_WORDS", "8"))
+TELEGRAM_STREAM_EDIT_INTERVAL_SECONDS = float(os.getenv("TELEGRAM_STREAM_EDIT_INTERVAL_SECONDS", "0.35"))
 TELEGRAM_SEND_RETRIES = int(os.getenv("TELEGRAM_SEND_RETRIES", "2"))
 TELEGRAM_SEND_RETRY_BACKOFF_SECONDS = float(
     os.getenv("TELEGRAM_SEND_RETRY_BACKOFF_SECONDS", "1.0")
@@ -279,18 +283,83 @@ def _format_reply(data: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_reply_plain(data: dict) -> str:
+    """Render plain-text reply for progressive Telegram message edits."""
+    answer = _clean_answer(data.get("answer", "").strip())
+    error = data.get("error")
+    if error and not answer:
+        return f"Lỗi: {error}"
+    return answer or "(Không có nội dung trả lời)"
+
+
+def _progressive_chunks(text: str, words_per_chunk: int) -> list[str]:
+    words = (text or "").split()
+    if not words:
+        return [text or ""]
+    step = max(1, words_per_chunk)
+    chunks: list[str] = []
+    for i in range(step, len(words) + step, step):
+        chunks.append(" ".join(words[:i]))
+    if chunks[-1] != " ".join(words):
+        chunks.append(" ".join(words))
+    return chunks
+
+
+async def _stream_reply_text(update: Update, full_text: str) -> bool:
+    """Simulate streaming UX by editing one Telegram message progressively."""
+    if not TELEGRAM_STREAM_ENABLED:
+        return await _safe_reply_text(update, full_text)
+
+    # Keep payload size within Telegram limits for text messages.
+    final_text = (full_text or "").strip()[:3900]
+    if not final_text:
+        final_text = "(Không có nội dung trả lời)"
+
+    placeholder = "..."
+    try:
+        msg = await _telegram_with_retry(
+            "reply_text_stream_placeholder",
+            lambda: update.message.reply_text(placeholder),
+        )
+    except Exception as e:
+        logger.error("stream placeholder send failed: %s", e)
+        return False
+
+    try:
+        chunks = _progressive_chunks(final_text, TELEGRAM_STREAM_CHUNK_WORDS)
+        for idx, chunk in enumerate(chunks):
+            await _telegram_with_retry(
+                "edit_message_stream",
+                lambda c=chunk: msg.edit_text(c, disable_web_page_preview=True),
+            )
+            if idx < len(chunks) - 1:
+                await asyncio.sleep(TELEGRAM_STREAM_EDIT_INTERVAL_SECONDS)
+        return True
+    except Exception as e:
+        logger.error("stream edit failed: %s", e)
+        return False
+
+
 def _filename_from_url(url: str) -> str:
     parsed = urlparse(url)
     name = os.path.basename(parsed.path) or "attachment.jpg"
     return unquote(name)
 
 
+def _is_redmine_attachment(url: str) -> bool:
+    """Return True if URL is a Redmine attachment that Telegram cannot fetch directly."""
+    if REDMINE_URL and url.startswith(REDMINE_URL):
+        return True
+    return "/redmine/attachments/download/" in url
+
+
 async def _send_image_attachments(update: Update, image_urls: list[str]) -> None:
     """Send image attachments directly to Telegram chat.
 
     Strategy:
-    1) Try sending URL directly (Telegram fetches remote image).
-    2) If failed, download image with optional Redmine API key and upload bytes.
+    1) Try sending URL directly, unless URL is a Redmine attachment (Telegram can't
+       reach internal Redmine — go straight to bytes download in that case).
+    2) Download image with optional Redmine API key and upload bytes.
     3) If all fail, send text fallback with links.
     """
 
@@ -301,12 +370,16 @@ async def _send_image_attachments(update: Update, image_urls: list[str]) -> None
     failed_urls: list[str] = []
 
     for url in image_urls[:MAX_IMAGE_SEND]:
-        # First attempt: direct URL send
-        ok = await _safe_reply_photo(update, url)
-        if ok:
-            sent_count += 1
-            continue
-        logger.warning("Direct URL send failed for %s", url)
+        # First attempt: direct URL send — skip for Redmine internal attachments
+        # because Telegram's servers cannot reach co.ehc.vn and would waste ~6s on retries.
+        if _is_redmine_attachment(url):
+            logger.debug("Skipping direct URL send for Redmine attachment: %s", url)
+        else:
+            ok = await _safe_reply_photo(update, url)
+            if ok:
+                sent_count += 1
+                continue
+            logger.warning("Direct URL send failed for %s", url)
 
         # Second attempt: authenticated fetch then upload bytes
         headers = {"X-Redmine-API-Key": REDMINE_API_KEY} if REDMINE_API_KEY else {}
@@ -382,12 +455,23 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             str(data.get("error") or ""),
         )
         reply = _format_reply(data)
-        ok = await _safe_reply_text(
-            update,
-            reply,
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True,
-        )
+        reply_plain = _format_reply_plain(data)
+        if TELEGRAM_STREAM_ENABLED and not data.get("error") and reply_plain.strip():
+            ok = await _stream_reply_text(update, reply_plain)
+            if not ok:
+                ok = await _safe_reply_text(
+                    update,
+                    reply,
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True,
+                )
+        else:
+            ok = await _safe_reply_text(
+                update,
+                reply,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
         if not ok:
             return
         await _send_image_attachments(update, data.get("image_urls", []))
@@ -462,12 +546,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             str(data.get("error") or ""),
         )
         reply = _format_reply(data)
-        ok = await _safe_reply_text(
-            update,
-            reply,
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True,
-        )
+        reply_plain = _format_reply_plain(data)
+        if TELEGRAM_STREAM_ENABLED and not data.get("error") and reply_plain.strip():
+            ok = await _stream_reply_text(update, reply_plain)
+            if not ok:
+                ok = await _safe_reply_text(
+                    update,
+                    reply,
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True,
+                )
+        else:
+            ok = await _safe_reply_text(
+                update,
+                reply,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
         if not ok:
             return
         await _send_image_attachments(update, data.get("image_urls", []))

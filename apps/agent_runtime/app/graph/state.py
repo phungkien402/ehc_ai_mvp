@@ -13,6 +13,8 @@ class WorkflowState(TypedDict, total=False):
     
     # Input
     trace_id: str
+    model_provider: str
+    rollout_bucket: int
     query_text: str
     image_bytes: Optional[bytes]
     conversation_context: str
