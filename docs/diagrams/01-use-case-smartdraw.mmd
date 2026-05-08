@@ -1,0 +1,41 @@
+flowchart LR
+  IT[Nhan vien IT]
+  Doctor[Bac si]
+  Admin[Quan tri vien]
+  Telegram[Telegram]
+  Redmine[Redmine]
+
+  subgraph System[EHC AI Helpdesk MVP]
+    UC01((UC01 Gui yeu cau ho tro))
+    UC02((UC02 Gui anh loi mo ta loi))
+    UC03((UC03 Tra cuu tri thuc ho tro))
+    UC04((UC04 Nhan cau tra loi tu dong))
+    UC05((UC05 Xem ticket lien quan))
+    UC06((UC06 Quan ly du lieu tri thuc))
+    UC07((UC07 Giam sat va quan tri he thong))
+  end
+
+  IT --- UC01
+  IT --- UC02
+  IT --- UC04
+  IT --- UC05
+
+  Doctor --- UC01
+  Doctor --- UC02
+  Doctor --- UC04
+  Doctor --- UC05
+
+  Admin --- UC06
+  Admin --- UC07
+
+  Telegram --- UC01
+  Telegram --- UC02
+  Telegram --- UC04
+
+  Redmine --- UC05
+  Redmine --- UC06
+
+  UC01 -. include .-> UC03
+  UC02 -. include .-> UC03
+  UC03 -. include .-> UC04
+  UC04 -. extend .-> UC05

@@ -158,15 +158,40 @@ def _confidence_label(score: float) -> str:
 
 
 def _clean_answer(answer: str) -> str:
-    """Remove trailing metadata footer inserted by backend, keep answer body only."""
+    """Remove backend metadata/markdown artifacts and keep user-facing answer body."""
     lines = [line.rstrip() for line in answer.splitlines()]
     cleaned: list[str] = []
     for line in lines:
-        line_lower = line.lower().strip()
+        stripped = line.strip()
+        line_lower = stripped.lower()
         if line_lower.startswith("_(tham khảo ticket") or line_lower.startswith("(tham khao ticket"):
             continue
+        if line_lower.startswith("nguồn:") or line_lower.startswith("source:"):
+            continue
+        if re.match(r"^\s*(source_id|issue_id|score|source_type|source_title)\s*[:=]", line_lower):
+            continue
         cleaned.append(line)
-    return "\n".join(cleaned).strip()
+
+    text = "\n".join(cleaned).strip()
+    if not text:
+        return text
+
+    # Normalize common markdown leftovers so Telegram shows clean plain chat text.
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"^\s{0,3}#{1,6}\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    # Keep Telegram output compact: collapse long lists into at most 5 lines.
+    compact_lines: list[str] = []
+    for line in text.splitlines():
+        if line.strip():
+            compact_lines.append(line)
+    if len(compact_lines) > 5:
+        compact_lines = compact_lines[:5]
+    text = "\n".join(compact_lines).strip()
+    return text.strip()
 
 
 def _to_html_multiline(text: str) -> str:
@@ -253,32 +278,27 @@ def _format_reply(data: dict) -> str:
         return f"⚠️ <b>Lỗi:</b> {html.escape(str(error))}"
 
     lines = [_to_html_multiline(answer)]
-    # Ticket citation disabled
-    # if sources:
-    #     src = sources[0]
-    #     issue_id = src.get("issue_id", "")
-    #     url = src.get("url", "")
-    #     if url:
-    #         safe_url = html.escape(str(url), quote=True)
-    #         lines.append(f"\nNguồn: <a href=\"{safe_url}\">Ticket #{html.escape(str(issue_id))}</a>")
-    #     elif issue_id:
-    #         lines.append(f"\nNguồn: Ticket #{html.escape(str(issue_id))}")
-    #
-    #     related = []
-    #     for s in sources[1:4]:
-    #         rel_issue_id = s.get("issue_id", "")
-    #         rel_url = s.get("url", "")
-    #         if not rel_issue_id:
-    #             continue
-    #         if rel_url:
-    #             safe_rel_url = html.escape(str(rel_url), quote=True)
-    #             related.append(
-    #                 f"<a href=\"{safe_rel_url}\">#{html.escape(str(rel_issue_id))}</a>"
-    #             )
-    #         else:
-    #             related.append(f"#{html.escape(str(rel_issue_id))}")
-    #     if related:
-    #         lines.append(f"Ticket gần nghĩa: {', '.join(related)}")
+    if sources:
+        src = sources[0]
+        source_type = str(src.get("source_type", "") or "").strip()
+        source_title = str(src.get("source_title", "") or "").strip()
+        issue_id = str(src.get("issue_id", "") or "").strip()
+        url = str(src.get("url", "") or "").strip()
+
+        footer_bits = []
+        if source_type:
+            footer_bits.append(f"[{html.escape(source_type)}]")
+        if source_title:
+            footer_bits.append(html.escape(source_title))
+        elif issue_id:
+            footer_bits.append(f"Ticket #{html.escape(issue_id)}")
+
+        if footer_bits:
+            if url:
+                safe_url = html.escape(url, quote=True)
+                lines.append(f"\n<b>Nguồn:</b> <a href=\"{safe_url}\">{' '.join(footer_bits)}</a>")
+            else:
+                lines.append(f"\n<b>Nguồn:</b> {' '.join(footer_bits)}")
 
     return "\n".join(lines)
 
@@ -286,22 +306,34 @@ def _format_reply(data: dict) -> str:
 def _format_reply_plain(data: dict) -> str:
     """Render plain-text reply for progressive Telegram message edits."""
     answer = _clean_answer(data.get("answer", "").strip())
+    sources = data.get("sources", [])
     error = data.get("error")
     if error and not answer:
         return f"Lỗi: {error}"
-    return answer or "(Không có nội dung trả lời)"
+    footer = ""
+    if sources:
+        src = sources[0]
+        source_type = str(src.get("source_type", "") or "").strip()
+        source_title = str(src.get("source_title", "") or "").strip()
+        issue_id = str(src.get("issue_id", "") or "").strip()
+        label = source_title or (f"Ticket #{issue_id}" if issue_id else "")
+        if source_type or label:
+            footer = f"\n\nNguồn: {f'[{source_type}] ' if source_type else ''}{label}".rstrip()
+    return (answer or "(Không có nội dung trả lời)") + footer
 
 
 def _progressive_chunks(text: str, words_per_chunk: int) -> list[str]:
-    words = (text or "").split()
-    if not words:
-        return [text or ""]
+    text = text or ""
+    word_ends = [m.end() for m in re.finditer(r"\S+", text)]
+    if not word_ends:
+        return [text]
     step = max(1, words_per_chunk)
     chunks: list[str] = []
-    for i in range(step, len(words) + step, step):
-        chunks.append(" ".join(words[:i]))
-    if chunks[-1] != " ".join(words):
-        chunks.append(" ".join(words))
+    for i in range(step, len(word_ends) + step, step):
+        idx = word_ends[min(i, len(word_ends)) - 1]
+        chunks.append(text[:idx])
+    if chunks[-1] != text:
+        chunks.append(text)
     return chunks
 
 

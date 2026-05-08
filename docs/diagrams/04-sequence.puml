@@ -1,0 +1,94 @@
+@startuml Sequence - EHC AI Helpdesk MVP
+skinparam backgroundColor #FAFAFA
+skinparam sequenceParticipantBackgroundColor #D6EAF8
+skinparam sequenceParticipantBorderColor #2980B9
+skinparam sequenceArrowColor #2C3E50
+skinparam sequenceLifeLineBorderColor #95A5A6
+skinparam noteBackgroundColor #FEF9E7
+skinparam noteBorderColor #F39C12
+skinparam fontName Arial
+
+title Biểu đồ Tuần tự — Xử lý yêu cầu hỗ trợ kỹ thuật
+
+actor "Nhân viên IT" as User
+participant "Telegram Bot\nbot.py" as TG
+participant "FastAPI Gateway\n:8000" as API
+participant "LangGraph Agent\nagent_runtime" as LG
+participant "Vision Model\nqwen2.5vl:7b" as VIS
+participant "Embeddings\nbge-m3" as EMB
+participant "Qdrant\n:6333" as QD
+participant "LLM\nqwen2.5:14b" as LLM
+
+User -> TG : Gửi tin nhắn\n(text + ảnh?)
+activate TG
+
+opt Tin nhắn có ảnh đính kèm
+    TG -> VIS : Gửi ảnh để phân tích OCR
+    activate VIS
+    VIS --> TG : Mô tả nội dung ảnh (text)
+    deactivate VIS
+    TG -> TG : Ghép OCR vào câu hỏi gốc
+end
+
+TG -> API : POST /api/v1/ask\n{query, thread_id}
+activate API
+API -> API : Validate request (Pydantic v2)
+
+API -> LG : invoke_graph(state)
+activate LG
+
+LG -> LLM : call_agent()\nPhân tích câu hỏi
+activate LLM
+LLM --> LG : Tool call: search_faq_tool(query)
+deactivate LLM
+
+LG -> EMB : Embed query
+activate EMB
+EMB --> LG : Query vector [1024 dim]
+deactivate EMB
+
+LG -> QD : similarity_search()\ncollection: ehc_faq, top_k=5
+activate QD
+QD --> LG : top-k chunks + ticket metadata
+deactivate QD
+
+LG -> LLM : grade_documents()\nĐánh giá độ liên quan
+activate LLM
+LLM --> LG : {relevant: bool, score}
+deactivate LLM
+
+loop [relevant=false AND retry < 2]
+    note over LG : Rewrite loop\ntối đa 2 lần
+    LG -> LLM : rewrite_query()
+    activate LLM
+    LLM --> LG : Query cải thiện
+    deactivate LLM
+    LG -> EMB : Embed query mới
+    activate EMB
+    EMB --> LG : Vector mới
+    deactivate EMB
+    LG -> QD : Tìm kiếm lại
+    activate QD
+    QD --> LG : Kết quả mới
+    deactivate QD
+    LG -> LLM : grade_documents()
+    activate LLM
+    LLM --> LG : {relevant: bool}
+    deactivate LLM
+end
+
+LG -> LLM : generate_final_answer()\nTổng hợp câu trả lời
+activate LLM
+LLM --> LG : Câu trả lời + sources
+deactivate LLM
+
+LG --> API : AgentState\n{answer, ticket_urls?}
+deactivate LG
+
+API --> TG : JSON response\n{answer, ticket_url?}
+deactivate API
+
+TG -> User : Gửi câu trả lời\n(kèm link ticket nếu có)
+deactivate TG
+
+@enduml

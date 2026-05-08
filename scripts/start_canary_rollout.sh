@@ -7,6 +7,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+if [[ -f ".env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 API_CMD="${API_CMD:-venv/bin/python3 apps/api_gateway/main.py}"
 API_PID_FILE="${API_PID_FILE:-tmp/api_gateway.pid}"
 API_LOG_FILE="${API_LOG_FILE:-logs/api-rollout.log}"

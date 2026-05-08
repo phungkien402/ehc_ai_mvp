@@ -18,7 +18,6 @@ from apps.agent_runtime.app.graph.nodes import (
     generate_final_answer,
     grade_documents,
     llm_unavailable,
-    natural_chat,
     rewrite_query,
 )
 
@@ -33,7 +32,6 @@ def build_workflow():
     
     # Add nodes
     graph.add_node("extract_ocr_if_image", extract_ocr_if_image)
-    graph.add_node("natural_chat", natural_chat)
     graph.add_node("llm_unavailable", llm_unavailable)
     graph.add_node("agent", call_agent)
     graph.add_node("tools", ToolNode(available_tools))
@@ -47,12 +45,10 @@ def build_workflow():
         "extract_ocr_if_image",
         route_after_ocr,
         {
-            "natural_chat": "natural_chat",
             "llm_unavailable": "llm_unavailable",
             "agent": "agent",
         },
     )
-    graph.add_edge("natural_chat", END)
     graph.add_edge("llm_unavailable", END)
 
     graph.add_conditional_edges(

@@ -1,0 +1,70 @@
+@startuml State - LangGraph Agent EHC AI Helpdesk MVP
+skinparam backgroundColor #FAFAFA
+skinparam stateBackgroundColor #D6EAF8
+skinparam stateBorderColor #2980B9
+skinparam stateArrowColor #2C3E50
+skinparam noteBackgroundColor #FEF9E7
+skinparam noteBorderColor #F39C12
+skinparam fontName Arial
+
+title Biểu đồ Trạng thái — LangGraph Self-RAG Agent
+
+[*] --> IDLE : Khởi động hệ thống
+
+state "IDLE\n(Chờ yêu cầu)" as IDLE
+state "RECEIVING\n(Nhận tin nhắn)" as RECEIVING
+state "OCR_PROCESSING\n(Phân tích ảnh)" as OCR_PROCESSING
+state "AGENT_THINKING\n(LLM suy luận)" as AGENT_THINKING
+state "TOOL_CALLING\n(Chuẩn bị tìm kiếm)" as TOOL_CALLING
+state "SEARCHING\n(Truy vấn Qdrant)" as SEARCHING
+state "GRADING\n(Đánh giá kết quả)" as GRADING
+state "REWRITING\n(Viết lại truy vấn)" as REWRITING
+state "GENERATING\n(Tổng hợp trả lời)" as GENERATING
+state "FALLBACK\n(Trả lời mặc định)" as FALLBACK
+state "ANSWERING\n(Gửi phản hồi)" as ANSWERING
+
+IDLE --> RECEIVING : User gửi tin nhắn Telegram
+RECEIVING --> OCR_PROCESSING : [có ảnh đính kèm]
+RECEIVING --> AGENT_THINKING : [chỉ có text]
+
+OCR_PROCESSING --> AGENT_THINKING : OCR thành công /\nOCR timeout → dùng query gốc
+
+note right of OCR_PROCESSING
+  Vision: qwen2.5vl:7b
+  qua GPU SSH Tunnel
+end note
+
+AGENT_THINKING --> TOOL_CALLING : Agent quyết định\ngọi search_faq_tool
+AGENT_THINKING --> GENERATING : Agent trả lời\ntrực tiếp (no tool)
+
+TOOL_CALLING --> SEARCHING : Embed query (bge-m3)\n→ Qdrant lookup
+
+note right of SEARCHING
+  collection: ehc_faq
+  metric: cosine
+  top_k: 5
+end note
+
+SEARCHING --> GRADING : Nhận kết quả tìm kiếm
+
+GRADING --> GENERATING : [relevant = true]\nĐộ liên quan đủ cao
+GRADING --> REWRITING : [relevant = false]\nKết quả không phù hợp
+
+REWRITING --> AGENT_THINKING : [attempt < 2]\nQuery đã được cải thiện
+
+note right of REWRITING
+  Tối đa 2 lần rewrite
+  Mục tiêu: bổ sung từ khoá
+  ngữ cảnh bệnh viện / EMR
+end note
+
+REWRITING --> FALLBACK : [attempt = 2]\nĐạt giới hạn retry
+
+GENERATING --> ANSWERING : Câu trả lời hoàn chỉnh
+FALLBACK --> ANSWERING : Thông báo\n"Chưa tìm được tài liệu"
+
+ANSWERING --> IDLE : Đã gửi phản hồi qua Telegram
+
+[*] <-- IDLE : Tắt hệ thống
+
+@enduml

@@ -1,0 +1,57 @@
+---
+title: Biểu đồ Use Case Tổng Quát (Mermaid) — EHC AI Helpdesk MVP
+---
+flowchart LR
+    %% Actors (left/right)
+    IT["👤 Nhân viên IT"]
+    Doctor["👤 Bác sĩ"]
+    Admin["👤 Quản trị viên"]
+    Telegram["🛰️ Telegram"]
+    Redmine["🗂️ Redmine"]
+
+    %% System boundary
+    subgraph SYS["EHC AI Helpdesk MVP"]
+        UC01(["UC01\nGửi yêu cầu hỗ trợ"])
+        UC02(["UC02\nGửi ảnh lỗi / mô tả lỗi"])
+        UC03(["UC03\nTra cứu tri thức hỗ trợ"])
+        UC04(["UC04\nNhận câu trả lời tự động"])
+        UC05(["UC05\nXem ticket liên quan"])
+        UC06(["UC06\nQuản lý dữ liệu tri thức"])
+        UC07(["UC07\nGiám sát và quản trị hệ thống"])
+    end
+
+    %% Associations (Actor -> Use Case)
+    IT --- UC01
+    IT --- UC02
+    IT --- UC04
+    IT --- UC05
+
+    Doctor --- UC01
+    Doctor --- UC02
+    Doctor --- UC04
+    Doctor --- UC05
+
+    Admin --- UC06
+    Admin --- UC07
+
+    Telegram --- UC01
+    Telegram --- UC02
+    Telegram --- UC04
+
+    Redmine --- UC05
+    Redmine --- UC06
+
+    %% include / extend
+    UC01 -. "<<include>>" .-> UC03
+    UC02 -. "<<include>>" .-> UC03
+    UC03 -. "<<include>>" .-> UC04
+    UC04 -. "<<extend>>\n[khi có ticket phù hợp]" .-> UC05
+
+    %% Styling
+    classDef actor fill:#FFFFFF,stroke:#2C3E50,stroke-width:2px,color:#2C3E50;
+    classDef usecase fill:#E8F4FD,stroke:#2980B9,stroke-width:2px,color:#1F3A5F;
+    classDef boundary fill:#F9FBFF,stroke:#7F8C8D,stroke-width:2px,color:#2C3E50;
+
+    class IT,Doctor,Admin,Telegram,Redmine actor;
+    class UC01,UC02,UC03,UC04,UC05,UC06,UC07 usecase;
+    class SYS boundary;

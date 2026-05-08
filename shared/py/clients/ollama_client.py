@@ -14,8 +14,23 @@ def _provider_mode() -> str:
     return (os.getenv("MODEL_PROVIDER", "ollama") or "ollama").strip().lower()
 
 
-def _is_vllm_mode() -> bool:
-    return _provider_mode() == "vllm"
+def _write_thinking_log(raw: str) -> None:
+    import re, time
+    blocks = re.findall(r"<think>(.*?)</think>", raw, flags=re.DOTALL)
+    if not blocks:
+        m = re.search(r"<think>(.*)", raw, flags=re.DOTALL)
+        if m:
+            blocks = [m.group(1)]
+    if not blocks:
+        return
+    try:
+        ts = time.strftime("%H:%M:%S")
+        with open("/tmp/ehc_thinking.log", "a", encoding="utf-8") as f:
+            for block in blocks:
+                f.write(f"\n[{ts}]\n{block.strip()}\n{'─'*60}\n")
+    except Exception:
+        pass
+
 
 
 def _vllm_headers() -> dict:
@@ -53,7 +68,7 @@ DEFAULT_OCR_PROMPT = (
 class OllamaEmbeddings:
     """Wrapper for Ollama embedding model."""
     
-    def __init__(self, base_url: str = None, model: str = "bge-m3", timeout: int = 60, provider: Optional[str] = None):
+    def __init__(self, base_url: str = None, model: str = None, timeout: int = 60, provider: Optional[str] = None):
         self.provider = (provider or _provider_mode()).strip().lower()
         if base_url:
             selected_base_url = base_url
@@ -61,12 +76,17 @@ class OllamaEmbeddings:
             selected_base_url = (
                 os.getenv("VLLM_EMBEDDING_URL")
                 or os.getenv("VLLM_BASE_URL")
-                or "http://localhost:8001"
+                or "http://localhost:8081"
             )
         else:
             selected_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.base_url = selected_base_url.rstrip("/")
-        self.model = model
+        if model is not None:
+            self.model = model
+        elif self.provider == "vllm":
+            self.model = os.getenv("VLLM_EMBEDDING_MODEL", "BAAI/bge-m3")
+        else:
+            self.model = os.getenv("OLLAMA_EMBEDDING_MODEL", "bge-m3:latest")
         self.timeout = timeout
         logger.info(
             "Initialized OllamaEmbeddings: %s (model: %s, provider: %s)",
@@ -343,16 +363,38 @@ class OllamaChat:
                         "model": self.model,
                         "messages": messages,
                         "temperature": 0.2,
-                        "max_tokens": 220,
+                        "max_tokens": 1024,
                     },
                     headers=_vllm_headers(),
                     timeout=self.timeout,
                 )
                 response.raise_for_status()
                 data = response.json()
-                content = _extract_openai_text(
-                    data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                )
+                message = data.get("choices", [{}])[0].get("message", {})
+                reasoning = (message.get("reasoning_content") or "").strip()
+                raw = _extract_openai_text(message.get("content", ""))
+                import re as _re
+                if reasoning:
+                    # vLLM reasoning-parser mode: thinking in reasoning_content, answer in content
+                    _write_thinking_log(f"<think>{reasoning}</think>")
+                    content = _re.sub(r"<think>.*?</think>", "", raw, flags=_re.DOTALL).strip()
+                    content = _re.sub(r"<think>.*", "", content, flags=_re.DOTALL).strip()
+                elif raw.startswith("Thinking Process:") or "\nThinking Process:" in raw:
+                    # Inline thinking mode: log it, extract last quoted sentence as final answer
+                    _write_thinking_log(f"<think>{raw}</think>")
+                    quotes = _re.findall(r'"([^"]{5,})"', raw)
+                    content = quotes[-1].strip() if quotes else ""
+                    if not content:
+                        # Fallback: last non-empty non-list paragraph
+                        for para in reversed(raw.split("\n\n")):
+                            para = para.strip()
+                            if para and not _re.match(r"^[\*\-#\d]", para) and len(para) > 15:
+                                content = para.splitlines()[-1].strip()
+                                break
+                else:
+                    _write_thinking_log(raw)
+                    content = _re.sub(r"<think>.*?</think>", "", raw, flags=_re.DOTALL).strip()
+                    content = _re.sub(r"<think>.*", "", content, flags=_re.DOTALL).strip()
                 if not content:
                     raise RuntimeError("Empty response from vLLM chat model")
                 return content

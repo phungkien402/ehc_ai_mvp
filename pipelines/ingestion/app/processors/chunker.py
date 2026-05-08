@@ -7,7 +7,7 @@ from typing import List
 import sys
 sys.path.insert(0, "/home/phungkien/ehc_ai_mvp")
 
-from shared.py.models.faq import FAQSource, FAQChunk
+from shared.py.models.faq import FAQSource, FAQChunk, ModuleDocSection
 from shared.py.utils.text import compose_faq_content, chunk_text, normalize_vietnamese
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,7 @@ class FAQChunker:
                 issue_id=faq.issue_id,
                 content=chunk_text_str,
                 content_brief=chunk_text_str[:200] if len(chunk_text_str) > 200 else chunk_text_str,
+                content_full=full_text,
                 chunk_index=idx,
                 metadata={
                     "source_url": faq.url,
@@ -71,4 +72,51 @@ class FAQChunker:
         for faq in faqs:
             all_chunks.extend(self.process_faq(faq))
         logger.info(f"Processed {len(faqs)} FAQs into {len(all_chunks)} chunks")
+        return all_chunks
+
+    def process_module_doc_section(self, section: ModuleDocSection) -> List[FAQChunk]:
+        """Convert a parsed DOCX section into retrieval chunks."""
+
+        full_text = (
+            f"{section.module_name}\n"
+            f"{section.section_title}\n\n"
+            f"{section.content}"
+        )
+        normalized = normalize_vietnamese(full_text)
+        chunk_texts = chunk_text(normalized, self.chunk_size, self.chunk_overlap)
+
+        chunks = []
+        for idx, chunk_text_str in enumerate(chunk_texts):
+            chunk = FAQChunk(
+                chunk_id=str(uuid.uuid4()),
+                issue_id=section.source_id,
+                source_id=section.source_id,
+                source_type="module_doc",
+                source_title=f"{section.module_name} / {section.section_title}",
+                section_path=section.section_title,
+                content=chunk_text_str,
+                content_brief=chunk_text_str[:200] if len(chunk_text_str) > 200 else chunk_text_str,
+                content_full=full_text,
+                chunk_index=idx,
+                image_ids=section.image_ids.copy() if section.image_ids else [],
+                metadata={
+                    "source_url": section.source_url,
+                    "source_file": section.source_file,
+                    "attachment_urls": section.attachment_urls,
+                    "image_count": len(section.image_ids) if section.image_ids else 0,
+                    "created_at": section.created_at.isoformat(),
+                    "updated_at": section.updated_at.isoformat(),
+                    **(section.metadata or {}),
+                },
+            )
+            chunks.append(chunk)
+
+        logger.debug("DOCX section %s split into %d chunks (images=%d)", section.source_id, len(chunks), len(section.image_ids) if section.image_ids else 0)
+        return chunks
+
+    def process_module_doc_batch(self, sections: List[ModuleDocSection]) -> List[FAQChunk]:
+        all_chunks = []
+        for section in sections:
+            all_chunks.extend(self.process_module_doc_section(section))
+        logger.info("Processed %d DOCX sections into %d chunks", len(sections), len(all_chunks))
         return all_chunks

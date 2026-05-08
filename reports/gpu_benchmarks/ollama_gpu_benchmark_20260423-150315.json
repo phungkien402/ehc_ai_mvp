@@ -1,0 +1,58 @@
+{
+  "timestamp": "20260423-150315",
+  "host": "ehcaihelpdeskserver.tail4517fa.ts.net",
+  "base_url": "http://127.0.0.1:11434",
+  "model": "qwen3.5:9b",
+  "prompt": "Viết một đoạn ngắn 5 câu về mục tiêu của benchmark GPU, tập trung vào throughput, latency, VRAM và nhiệt độ.",
+  "prompt_tokens": 21,
+  "warmup_runs": 1,
+  "samples": 3,
+  "num_predict": 128,
+  "nvitop_snapshot": "Thu Apr 23 15:03:17 2026\n+=============================================================================+\n| NVITOP 1.6.2      Driver Version: 570.211.01      CUDA Driver Version: 12.8 |\n|-------------------------------+----------------------+----------------------|\n| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |\n|===============================+======================+======================|\n|   0  ..la V100-SXM2-16GB  Off | 00000000:04:00.0 Off |                    0 |\n| N/A   44C   P0     69W / 300W |   9319MiB / 16384MiB |     48%      Default |\n|-------------------------------+----------------------+----------------------|\n|   1  ..la V100-SXM2-16GB  Off | 00000000:82:00.0 Off |                    0 |\n| N/A   40C   P0     58W / 300W |  309.1MiB / 16384MiB |      0%      Default |\n+===============================+======================+======================+\n[ CPU: | 1.6%            UPTIME: 1:19:36 ]  ( Load Average:  0.27  0.32  0.38 )\n[ MEM: || 4.6%             USED: 5.82GiB ]  [ SWP: | 0.0%                     ]\n\n+=============================================================================+\n| Processes:                                    phungkien@ehcaihelpdeskserver |\n| GPU     PID      USER  GPU-MEM %SM %GMBW  %CPU  %MEM  TIME  COMMAND         |\n|=============================================================================|\n|   0   18830 C phungk+  9316MiB  76    53   0.0   1.2  5:39  /usr/local/bi.. |\n|-----------------------------------------------------------------------------|\n|   1   18830 C phungk+ 306.0MiB   0     0   0.0   1.2  5:39  /usr/local/bi.. |\n+=============================================================================+",
+  "summary": {
+    "samples": 3,
+    "elapsed_avg_sec": 2.3698509013335447,
+    "elapsed_min_sec": 2.306017367000095,
+    "elapsed_max_sec": 2.4680745750001734,
+    "elapsed_p50_sec": 2.3354607620003662,
+    "elapsed_p95_sec": 2.454813193700193,
+    "elapsed_stdev_sec": 0.08632870860097322,
+    "eval_rate_avg_tps": 76.34218068710396,
+    "prompt_rate_avg_tps": 624.8057244267087
+  },
+  "runs": [
+    {
+      "run": 1,
+      "elapsed_sec": 2.3354607620003662,
+      "total_duration_sec": 2.332007522,
+      "load_duration_sec": 0.47422375,
+      "prompt_eval_count": 38,
+      "eval_count": 128,
+      "eval_rate_tps": 77.24786841764177,
+      "prompt_rate_tps": 642.6898260509247,
+      "response_preview": ""
+    },
+    {
+      "run": 2,
+      "elapsed_sec": 2.4680745750001734,
+      "total_duration_sec": 2.464916748,
+      "load_duration_sec": 0.578473772,
+      "prompt_eval_count": 38,
+      "eval_count": 128,
+      "eval_rate_tps": 76.28824388893842,
+      "prompt_rate_tps": 572.7187992293254,
+      "response_preview": ""
+    },
+    {
+      "run": 3,
+      "elapsed_sec": 2.306017367000095,
+      "total_duration_sec": 2.302835028,
+      "load_duration_sec": 0.410147645,
+      "prompt_eval_count": 38,
+      "eval_count": 128,
+      "eval_rate_tps": 75.49042975473171,
+      "prompt_rate_tps": 659.0085479998761,
+      "response_preview": ""
+    }
+  ]
+}

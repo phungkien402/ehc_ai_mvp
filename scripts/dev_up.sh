@@ -4,19 +4,37 @@
 set -e
 
 echo "=== Starting EHC AI MVP Stack ==="
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 # Load .env
 if [ ! -f .env ]; then
     echo "Creating .env from .env.example..."
+    if [ ! -f .env.example ]; then
+        echo "Error: .env.example not found in $PROJECT_ROOT"
+        exit 1
+    fi
     cp .env.example .env
 fi
 
-export $(cat .env | grep -v '^#' | xargs)
+set -a
+. ./.env
+set +a
+
+# Support both Compose V1 (`docker-compose`) and V2 (`docker compose`).
+if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker-compose)
+elif docker compose version >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker compose)
+else
+    echo "Error: neither 'docker-compose' nor 'docker compose' is available"
+    exit 1
+fi
 
 # Start Docker services
 echo "Starting Docker services..."
-docker-compose -f docker/docker-compose.yml up -d
+"${COMPOSE_CMD[@]}" -f docker/docker-compose.yml up -d
 
 # Wait for services to be healthy
 echo "Waiting for services to be ready (30 seconds)..."

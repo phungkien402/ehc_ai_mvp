@@ -1,0 +1,66 @@
+@startuml Activity - EHC AI Helpdesk MVP
+skinparam backgroundColor #FAFAFA
+skinparam activityBackgroundColor #D6EAF8
+skinparam activityBorderColor #2980B9
+skinparam activityDiamondBackgroundColor #FCF3CF
+skinparam activityDiamondBorderColor #D4AC0D
+skinparam arrowColor #2C3E50
+skinparam fontName Arial
+
+title Biểu đồ Hoạt động — Luồng xử lý yêu cầu người dùng
+
+|Telegram Bot|
+start
+:Nhận message từ User;
+
+if (Tin nhắn có ảnh?) then (Có)
+  :Tải ảnh về server;
+  :OCR ảnh bằng Vision Model\n(qwen2.5vl:7b);
+  :Ghép nội dung OCR\nvào câu hỏi gốc;
+endif
+
+|FastAPI Gateway|
+:Nhận POST /api/v1/ask\n{query, images?, thread_id};
+:Validate request (Pydantic);
+
+|LangGraph Agent|
+:Khởi tạo AgentState\n{messages, query, context};
+:call_agent() — gửi query đến LLM\n(qwen2.5:14b);
+
+if (Agent gọi Tool tìm kiếm?) then (Có)
+  |Qdrant + Embeddings|
+  :Embed query bằng bge-m3;
+  :Tìm kiếm vector cosine similarity\ntrong collection ehc_faq;
+  :Trả về top-k chunks;
+
+  |LangGraph Agent|
+  :grade_documents()\nĐánh giá độ liên quan;
+
+  if (Kết quả đủ liên quan?) then (Có)
+    :Chuyển sang generate;
+  else (Không)
+    if (Đã retry tối đa 2 lần?) then (Chưa)
+      :rewrite_query()\nViết lại truy vấn;
+      :Quay lại call_agent();
+    else (Rồi)
+      :Dùng fallback answer;
+    endif
+  endif
+else (Không)
+  note right: Agent có đủ ngữ cảnh\ntrả lời trực tiếp
+endif
+
+:generate_final_answer()\nTổng hợp câu trả lời cuối;
+
+if (Có ticket Redmine khớp?) then (Có)
+  :Đính kèm link ticket;
+endif
+
+|FastAPI Gateway|
+:Trả về JSON response\n{answer, sources, ticket_url?};
+
+|Telegram Bot|
+:Gửi câu trả lời đến User;
+stop
+
+@enduml

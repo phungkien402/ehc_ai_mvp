@@ -1,0 +1,50 @@
+---
+title: Biểu đồ Trạng thái — LangGraph Agent (EHC AI Helpdesk MVP)
+---
+stateDiagram-v2
+    [*] --> IDLE : Khởi tạo hệ thống
+
+    IDLE --> RECEIVING : User gửi tin nhắn
+
+    RECEIVING --> OCR_PROCESSING : Tin nhắn có ảnh
+    RECEIVING --> AGENT_THINKING : Tin nhắn chỉ có text
+
+    OCR_PROCESSING --> OCR_DONE : Vision Model xử lý xong
+    OCR_PROCESSING --> OCR_FAILED : Timeout / Lỗi model
+    OCR_FAILED --> AGENT_THINKING : Tiếp tục với query gốc
+
+    OCR_DONE --> AGENT_THINKING : Ghép nội dung OCR vào query
+
+    AGENT_THINKING --> TOOL_CALLING : Agent quyết định gọi search tool
+    AGENT_THINKING --> GENERATING : Agent có đủ context (no tool call)
+
+    TOOL_CALLING --> SEARCHING : Embed query + Qdrant lookup
+    SEARCHING --> GRADING : Nhận top-k kết quả
+
+    GRADING --> GENERATING : Kết quả liên quan (score ≥ threshold)
+    GRADING --> REWRITING : Kết quả không liên quan
+
+    REWRITING --> AGENT_THINKING : [retry < 2] Gửi lại query đã viết lại
+    REWRITING --> FALLBACK : [retry = 2] Đã đạt giới hạn retry
+
+    GENERATING --> ANSWERING : Tổng hợp xong câu trả lời
+    FALLBACK --> ANSWERING : Dùng câu trả lời mặc định
+
+    ANSWERING --> IDLE : Gửi trả lời cho User
+
+    note left of OCR_PROCESSING
+        Model: qwen2.5vl:7b
+        qua SSH Tunnel → GPU
+    end note
+
+    note right of SEARCHING
+        bge-m3 embedding
+        Qdrant cosine similarity
+        collection: ehc_faq
+    end note
+
+    note right of REWRITING
+        Giới hạn: 2 lần retry
+        Mục tiêu: cải thiện query
+        để tìm kiếm chính xác hơn
+    end note

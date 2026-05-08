@@ -31,6 +31,7 @@ class WorkflowState(TypedDict, total=False):
     retrieved_chunks: List[dict]
     is_relevant: str
     grading_reason: Optional[str]
+    retrieval_intent: Optional[str]
     retrieval_debug: List[dict]
     last_tool_name: Optional[str]
     

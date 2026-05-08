@@ -25,7 +25,7 @@ class QdrantWriter:
         self.embedding_model = embedding_model
         self.batch_size = batch_size
     
-    def write_chunks(self, chunks: List[FAQChunk]) -> int:
+    def write_chunks(self, chunks: List[FAQChunk], collection_name: str | None = None) -> int:
         """
         Embed chunks and upsert to Qdrant.
         
@@ -36,8 +36,10 @@ class QdrantWriter:
             Number of chunks successfully written
         """
         
+        target_collection = collection_name or self.collection_name
+
         # Ensure collection exists
-        self.qdrant.ensure_collection_exists(self.collection_name, vector_size=1024)
+        self.qdrant.ensure_collection_exists(target_collection, vector_size=1024)
         
         # Batch embed + upsert
         written_count = 0
@@ -63,15 +65,21 @@ class QdrantWriter:
                     payload = QdrantPayload(
                         chunk_id=chunk.chunk_id,
                         issue_id=chunk.issue_id,
+                        source_id=chunk.source_id or chunk.issue_id,
+                        source_type=chunk.source_type or "faq",
+                        source_title=chunk.source_title or "",
+                        section_path=chunk.section_path or "",
+                        content_full=chunk.content_full or chunk.content,
                         content_brief=chunk.content_brief,
                         attachment_urls=chunk.metadata.get("attachment_urls", []),
                         source_url=chunk.metadata.get("source_url", ""),
                         embedding_model=self.embedding_model,
-                        created_at=chunk.metadata.get("created_at", "")
+                        created_at=chunk.metadata.get("created_at", ""),
+                        image_ids=chunk.image_ids or []
                     )
                     
                     self.qdrant.upsert_chunk(
-                        collection_name=self.collection_name,
+                        collection_name=target_collection,
                         point_id=point_id,
                         vector=vector,
                         payload=payload.to_dict()
@@ -85,7 +93,7 @@ class QdrantWriter:
                 continue
         
         # Log final collection stats
-        info = self.qdrant.collection_info(self.collection_name)
-        logger.info(f"Collection '{self.collection_name}' now has {info.get('point_count', 0)} points")
+        info = self.qdrant.collection_info(target_collection)
+        logger.info("Collection '%s' now has %s points", target_collection, info.get("point_count", 0))
         
         return written_count

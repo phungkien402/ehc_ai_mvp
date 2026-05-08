@@ -117,6 +117,12 @@ EHC_GPU_USER=root \
 # From Redmine project "FAQ"
 ./scripts/run_ingestion.sh --project FAQ
 
+# DOCX module guides only (POC)
+./scripts/run_ingestion.sh --source docx --docx-dir data/module_docs_raw --disable-docx-ocr
+
+# Both FAQ + DOCX in one run
+./scripts/run_ingestion.sh --source both --project FAQ --docx-dir data/module_docs_raw
+
 # Or dry-run to test without writing to Qdrant
 ./scripts/run_ingestion.sh --project FAQ --dry-run
 ```

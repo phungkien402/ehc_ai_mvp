@@ -1,0 +1,51 @@
+---
+title: Biểu đồ Hoạt động — Luồng xử lý câu hỏi (EHC AI Helpdesk MVP)
+---
+flowchart TD
+    START(["🟢 Bắt đầu\n(User gửi tin nhắn Telegram)"])
+    recv["Telegram Bot nhận message\ntelegram_bot/bot.py"]
+    has_img{Tin nhắn\ncó ảnh?}
+    ocr["OCR ảnh qua Vision Model\nqwen2.5vl:7b\nextract_ocr_if_image()"]
+    merge["Ghép nội dung OCR\nvào câu hỏi gốc"]
+    post["POST /api/v1/ask\nFastAPI Gateway"]
+    agent["LangGraph Agent\ncall_agent()"]
+    tool_call{Agent gọi\nTool tìm kiếm?}
+    search["search_faq_tool()\nEmbed query → Qdrant\nbge-m3 + cosine similarity"]
+    grade{Kết quả\nliên quan?}
+    rewrite["Viết lại truy vấn\nrewrite_query()\n(tối đa 2 lần)"]
+    max_retry{Đã retry\ntối đa?}
+    fallback["Trả lời fallback:\n'Chưa tìm thấy tài liệu phù hợp'"]
+    generate["Tổng hợp câu trả lời\ngenerate_final_answer()\nqwen2.5:14b"]
+    has_ticket{Có ticket\nRedmine khớp?}
+    attach["Đính kèm link ticket\nRedmine"]
+    reply["Telegram Bot gửi\ncâu trả lời cho User"]
+    END(["🔴 Kết thúc"])
+
+    START --> recv
+    recv --> has_img
+    has_img -- Có --> ocr --> merge --> post
+    has_img -- Không --> post
+    post --> agent
+    agent --> tool_call
+    tool_call -- Có --> search --> grade
+    tool_call -- Không --> generate
+    grade -- Liên quan --> generate
+    grade -- Không liên quan --> rewrite --> max_retry
+    max_retry -- Chưa --> agent
+    max_retry -- Rồi --> fallback --> reply
+    generate --> has_ticket
+    has_ticket -- Có --> attach --> reply
+    has_ticket -- Không --> reply
+    reply --> END
+
+    classDef startEnd fill:#2ECC71,stroke:#27AE60,color:#fff
+    classDef process fill:#3498DB,stroke:#2980B9,color:#fff
+    classDef decision fill:#E67E22,stroke:#CA6F1E,color:#fff
+    classDef infra fill:#9B59B6,stroke:#8E44AD,color:#fff
+    classDef fallbackStyle fill:#E74C3C,stroke:#C0392B,color:#fff
+
+    class START,END startEnd
+    class recv,merge,post,agent,rewrite,generate,attach,reply process
+    class has_img,tool_call,grade,has_ticket,max_retry decision
+    class ocr,search infra
+    class fallback fallbackStyle

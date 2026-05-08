@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Qdrant vector database
   qdrant:
@@ -36,7 +34,7 @@ services:
   # FastAPI Gateway
   api:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.api
     ports:
       - "8000:8000"

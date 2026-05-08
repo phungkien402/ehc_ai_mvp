@@ -12,7 +12,7 @@ from threading import Lock
 
 @dataclass
 class SessionState:
-    history: deque = field(default_factory=lambda: deque(maxlen=8))
+    history: deque = field(default_factory=lambda: deque(maxlen=20))  # Increased from 8 to 20
     last_issue_id: str | None = None
     last_issue_snippet: str | None = None
     last_issue_url: str | None = None
@@ -57,7 +57,7 @@ class SessionMemoryStore:
                 return "", ""
 
             history_lines = []
-            for item in list(state.history)[-6:]:
+            for item in list(state.history)[-12:]:  # Increased from 6 to 12
                 role = item.get("role", "user")
                 text = (item.get("text", "") or "").strip()
                 if text:
@@ -103,10 +103,27 @@ class SessionMemoryStore:
             return query
 
         lowered = query.lower()
-        followup = bool(
-            re.search(r"\b(chi tiết|cụ thể|nói rõ|giải thích thêm|thế còn|cái đó|vậy còn|nữa)\b", lowered)
-            or len(lowered.split()) <= 5
+        explicit_followup = bool(
+            re.search(
+                r"\b(chi tiết hơn|chi tiết|cụ thể|nói rõ|giải thích thêm|thế còn|cái đó|vậy còn|mục đó|bước đó)\b",
+                lowered,
+            )
         )
+        anaphora_short_followup = bool(
+            len(lowered.split()) <= 6
+            and re.search(r"\b(này|đó|vậy|thế|tiếp|nữa|còn lại)\b", lowered)
+        )
+        standalone_task_query = bool(
+            re.search(
+                r"\b(cách|hướng dẫn|làm sao|gộp|tạo|xóa|sửa|cập nhật|kết nối|cấu hình|đăng nhập|in|xuất)\b",
+                lowered,
+            )
+        )
+
+        followup = explicit_followup or anaphora_short_followup
+        if standalone_task_query and not explicit_followup:
+            followup = False
+
         if not followup:
             return query
 

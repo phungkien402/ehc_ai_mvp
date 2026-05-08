@@ -31,6 +31,9 @@ temp/
 tmp/
 *.tmp
 
+# Local DOCX corpus for ingestion experiments
+data/module_docs_raw/
+
 # System tokens
 system/
 

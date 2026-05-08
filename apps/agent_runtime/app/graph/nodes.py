@@ -1,10 +1,12 @@
 """LangGraph nodes implementation for the Self-RAG workflow."""
 
+import base64
 import json
 import logging
 import re
 import sys
 import uuid
+from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
@@ -21,10 +23,14 @@ from apps.agent_runtime.app.graph.tracing import emit_trace
 from apps.agent_runtime.app.graph.tools import (
     lexical_overlap_ratio,
     parse_tool_payload,
+    search_faq_chunks,
     set_runtime_model_provider,
 )
 from shared.py.clients.ollama_client import DEFAULT_OCR_PROMPT, OllamaChat, OllamaVision
 from shared.py.utils.text import merge_query_with_ocr, normalize_vietnamese
+from pipelines.ingestion.app.utils.image_storage import ImageStorage
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +43,11 @@ def _build_agent_model(provider_override: str | None = None):
                 "MODEL_PROVIDER=vllm requires langchain-openai. Run: pip install -r requirements.txt"
             )
         return ChatOpenAI(
-            model=config.OLLAMA_LLM_MODEL,
+            model=config.VLLM_LLM_MODEL,
             base_url=f"{config.VLLM_LLM_URL.rstrip('/')}/v1",
-            api_key=config.VLLM_API_KEY or "dummy",
+            api_key=config.VLLM_API_KEY or "EMPTY",
             temperature=0.1,
-            max_tokens=180,
+            max_tokens=512,
         )
 
     return ChatOllama(
@@ -49,7 +55,28 @@ def _build_agent_model(provider_override: str | None = None):
         base_url=config.OLLAMA_BASE_URL,
         temperature=0.1,
         num_predict=180,
+        think=False,
     )
+
+
+def _strip_thinking(text: str) -> str:
+    """Remove <think>…</think> blocks, appending captured content to /tmp/ehc_thinking.log."""
+    import time as _time
+
+    def _capture(m):
+        block = m.group(0)
+        try:
+            with open("/tmp/ehc_thinking.log", "a", encoding="utf-8") as f:
+                f.write(f"\n[{_time.strftime('%H:%M:%S')}] {block}\n")
+        except Exception:
+            pass
+        return ""
+
+    text = re.sub(r"<think>.*?</think>", _capture, text, flags=re.DOTALL)
+    # Unclosed tag (truncated by max_tokens) — capture and drop the rest
+    text = re.sub(r"<think>.*", _capture, text, flags=re.DOTALL)
+    text = re.sub(r"Thinking Process:.*", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 def _latest_tool_message(state: WorkflowState) -> ToolMessage | None:
@@ -67,17 +94,6 @@ def _latest_ai_text(state: WorkflowState) -> str:
     return ""
 
 
-def _has_tool_result(state: WorkflowState) -> bool:
-    return any(isinstance(message, ToolMessage) for message in list(state.get("messages", [])))
-
-
-def _has_valid_tool_result(state: WorkflowState) -> bool:
-    tool_message = _latest_tool_message(state)
-    if tool_message is None:
-        return False
-    payload = parse_tool_payload(str(tool_message.content))
-    chunks = payload.get("chunks") if isinstance(payload, dict) else []
-    return isinstance(chunks, list) and len(chunks) > 0
 
 
 def _forced_search_tool_call(query: str) -> AIMessage:
@@ -160,11 +176,11 @@ def _select_similar_sources(
     best_vector = float(best.get("score", 0.0) or 0.0)
 
     selected: list[dict] = []
-    seen_issue_ids: set[str] = set()
+    seen_source_ids: set[str] = set()
 
     for chunk in ranked_chunks:
-        issue_id = str(chunk.get("issue_id", "") or "").strip()
-        if not issue_id or issue_id in seen_issue_ids:
+        source_id = str(chunk.get("source_id", "") or chunk.get("issue_id", "") or "").strip()
+        if not source_id or source_id in seen_source_ids:
             continue
 
         rerank_score = float(chunk.get("rerank_score", 0.0) or 0.0)
@@ -177,7 +193,7 @@ def _select_similar_sources(
 
         if is_top or is_near_tie:
             selected.append(chunk)
-            seen_issue_ids.add(issue_id)
+            seen_source_ids.add(source_id)
         if len(selected) >= max_sources:
             break
 
@@ -219,6 +235,284 @@ def _extract_steps_from_chunk_text(text: str, max_steps: int = 5) -> list[str]:
 
     sentence_parts = [p.strip(" -\n\t") for p in raw.replace("\n", ". ").split(".") if p.strip()]
     return sentence_parts[:max_steps]
+
+
+def _is_doc_flow_query(query: str) -> bool:
+    """Detect when user asks for procedural/full-flow guidance from documentation."""
+    lowered = (query or "").lower()
+    return bool(
+        re.search(
+            r"\b(hướng dẫn|huong dan|chi tiết|chi tiet|từ đầu|tu dau|toàn bộ|toan bo|quy trình|quy trinh|các bước|cac buoc)\b",
+            lowered,
+        )
+    )
+
+
+def _collect_module_doc_context_chunks(ranked_chunks: list[dict], max_chunks: int = 8) -> list[dict]:
+    """Collect module_doc chunks from the same guide family for richer procedural context."""
+    if not ranked_chunks:
+        return []
+
+    anchor = ranked_chunks[0]
+    anchor_title = str(anchor.get("source_title", "") or "")
+    guide_prefix = anchor_title.split("/")[0].strip().lower() if anchor_title else ""
+
+    selected: list[dict] = []
+    seen_ids: set[str] = set()
+    for chunk in ranked_chunks:
+        source_id = str(chunk.get("source_id", chunk.get("issue_id", "")) or "").strip()
+        title = str(chunk.get("source_title", "") or "").lower()
+        source_type = str(chunk.get("source_type", "faq") or "faq").strip()
+
+        if source_type != "module_doc":
+            continue
+        if guide_prefix and guide_prefix not in title:
+            continue
+        if source_id and source_id in seen_ids:
+            continue
+
+        selected.append(chunk)
+        if source_id:
+            seen_ids.add(source_id)
+        if len(selected) >= max_chunks:
+            break
+
+    if selected:
+        return selected[:max_chunks]
+    return [c for c in ranked_chunks if str(c.get("source_type", "faq")) == "module_doc"][:max_chunks] or ranked_chunks[:max_chunks]
+
+
+def _augment_module_doc_flow_chunks(base_chunks: list[dict], query: str, max_chunks: int = 8) -> list[dict]:
+    """Augment module_doc context by issuing broader procedural retrieval queries."""
+    merged: list[dict] = []
+    seen_source_ids: set[str] = set()
+
+    def _add_chunk(chunk: dict) -> None:
+        source_id = str(chunk.get("source_id", chunk.get("issue_id", "")) or "").strip()
+        source_type = str(chunk.get("source_type", "faq") or "faq").strip()
+        if source_type != "module_doc":
+            return
+        if source_id and source_id in seen_source_ids:
+            return
+        merged.append(chunk)
+        if source_id:
+            seen_source_ids.add(source_id)
+
+    for c in base_chunks:
+        _add_chunk(c)
+
+    supplement_queries = [
+        query,
+        f"{query} hướng dẫn chi tiết từng bước",
+        f"{query} toàn bộ quy trình",
+    ]
+    for q in supplement_queries:
+        try:
+            for c in search_faq_chunks(q):
+                _add_chunk(c)
+                if len(merged) >= max_chunks:
+                    return merged[:max_chunks]
+        except Exception as exc:
+            logger.warning("Supplement module_doc retrieval failed for '%s': %s", q, exc)
+
+    return merged[:max_chunks]
+
+
+def _build_stepwise_answer_from_chunks(chunks: list[dict], max_steps: int = 10) -> str:
+    """Build deterministic stepwise answer from retrieved doc chunks when LLM output is too short."""
+    steps: list[str] = []
+    seen: set[str] = set()
+
+    for chunk in chunks:
+        full_text = str(chunk.get("content_full", "") or chunk.get("content_brief", "") or "")
+        for raw_line in full_text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if not (line.startswith("-") or line.startswith("+") or re.match(r"^\d+[\.)]", line)):
+                continue
+
+            cleaned = re.sub(r"^[\-\+\d\.)\s]+", "", line).strip()
+            cleaned = re.sub(r"\s+", " ", cleaned)
+            if len(cleaned) < 8:
+                continue
+
+            lowered = cleaned.lower()
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            steps.append(cleaned)
+            if len(steps) >= max_steps:
+                break
+        if len(steps) >= max_steps:
+            break
+
+    if not steps:
+        return ""
+
+    lines = ["Bạn làm từ đầu theo thứ tự sau:"]
+    lines.extend([f"{idx}. {step}" for idx, step in enumerate(steps, 1)])
+    return "\n".join(lines)
+
+
+def _build_doc_flow_answer_by_sections(chunks: list[dict], max_sections: int = 5, max_points_per_section: int = 3) -> str:
+    """Build deterministic guide answer grouped by document sections."""
+    if not chunks:
+        return ""
+
+    seen_section: set[str] = set()
+    section_blocks: list[tuple[str, list[str]]] = []
+
+    for chunk in chunks:
+        section_title = str(chunk.get("section_path", "") or chunk.get("source_title", "") or "").strip()
+        if not section_title:
+            continue
+        key = section_title.lower()
+        if key in seen_section:
+            continue
+        seen_section.add(key)
+
+        full_text = str(chunk.get("content_full", "") or chunk.get("content_brief", "") or "")
+        points: list[str] = []
+        seen_points: set[str] = set()
+        for raw_line in full_text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if not (line.startswith("-") or line.startswith("+") or re.match(r"^\d+[\.)]", line)):
+                continue
+
+            cleaned = re.sub(r"^[\-\+\d\.)\s]+", "", line).strip()
+            cleaned = _clean_docx_step_text(cleaned)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip()
+            if len(cleaned) < 8:
+                continue
+
+            lower = cleaned.lower()
+            if lower in seen_points:
+                continue
+            seen_points.add(lower)
+            points.append(cleaned)
+            if len(points) >= max_points_per_section:
+                break
+
+        if points:
+            section_blocks.append((section_title, points))
+        if len(section_blocks) >= max_sections:
+            break
+
+    if not section_blocks:
+        return ""
+
+    lines = ["Bạn làm theo từng bước như sau:"]
+    for idx, (title, points) in enumerate(section_blocks, 1):
+        lines.append(f"Bước {idx}: {title}")
+        for p in points:
+            lines.append(f"- {p}")
+    return "\n".join(lines)
+
+
+def _is_progress_followup_query(query: str) -> bool:
+    lowered = (query or "").lower()
+    return bool(
+        re.search(
+            r"\b(mỗi vậy thôi|moi vay thoi|còn nữa không|con nua khong|tiếp theo|tiep theo|rồi sao|roi sao|đã xong|da xong|xong bước|xong buoc)\b",
+            lowered,
+        )
+    )
+
+
+def _progress_skip_keywords(query: str) -> list[str]:
+    lowered = (query or "").lower()
+    keywords: list[str] = []
+    if "chuẩn bị" in lowered or "chuan bi" in lowered:
+        keywords.extend(["chuẩn bị", "máy trạm", "worklist"])
+    if "cài đặt thông số" in lowered or "cai dat thong so" in lowered:
+        keywords.extend(["thông số", "pacs name", "pacs ae", "pacs port", "worklist port"])
+    return keywords
+
+
+def _build_progress_followup_answer(chunks: list[dict], query: str) -> str:
+    """Return next-step guidance for conversational follow-up without repeating completed steps."""
+    raw = _build_stepwise_answer_from_chunks(chunks, max_steps=12)
+    if not raw:
+        return ""
+
+    lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
+    step_lines = [ln for ln in lines if re.match(r"^\d+\.\s+", ln)]
+    if not step_lines:
+        return ""
+
+    skip_keys = _progress_skip_keywords(query)
+    filtered: list[str] = []
+    for ln in step_lines:
+        lowered = ln.lower()
+        if skip_keys and any(k in lowered for k in skip_keys):
+            continue
+        filtered.append(ln)
+
+    if not filtered:
+        filtered = step_lines[1:]
+    if not filtered:
+        filtered = step_lines
+
+    next_steps = filtered[:3]
+    if not next_steps:
+        return ""
+
+    out = ["Chưa hết, bạn làm tiếp các bước sau:"]
+    out.extend(next_steps)
+    out.append("Xong các bước này thì nhắn mình, mình chỉ bước tiếp theo ngay.")
+    return "\n".join(out)
+
+
+def _clean_docx_step_text(step: str) -> str:
+    """Remove noisy DOCX-derived prefixes and normalize compact bullet text."""
+    cleaned = re.sub(r"\s+", " ", (step or "")).strip(" -\n\t")
+    if not cleaned:
+        return ""
+
+    # Drop boilerplate prefixes frequently seen in chunk previews.
+    cleaned = re.sub(r"^hdsd[_\s-]*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^hướng dẫn[_\s-]*", "", cleaned, flags=re.IGNORECASE)
+
+    # If line still starts with title-like phrase, keep the actionable tail after ":" or "-".
+    lowered = cleaned.lower()
+    if "kết nối minipacs" in lowered and (":" in cleaned or " - " in cleaned):
+        if ":" in cleaned:
+            cleaned = cleaned.split(":", 1)[1].strip()
+        elif " - " in cleaned:
+            cleaned = cleaned.split(" - ", 1)[1].strip()
+
+    return cleaned
+
+
+def _pick_best_docx_source_for_query(selected_sources: list[dict], query: str) -> dict:
+    """Pick the source whose section/title best matches explicit query intent."""
+    if not selected_sources:
+        return {}
+
+    lowered_query = (query or "").lower()
+    has_prepare_intent = bool(re.search(r"\b(chuẩn bị|chuan bi|chuẩn bị gì|can chuan bi)\b", lowered_query))
+    has_connect_intent = bool(re.search(r"\b(kết nối|ket noi|cấu hình|cau hinh)\b", lowered_query))
+
+    best = selected_sources[0]
+    best_score = -1.0
+    for src in selected_sources:
+        section = str(src.get("section_path", "") or "").lower()
+        title = str(src.get("source_title", "") or "").lower()
+        score = float(src.get("score", 0.0) or 0.0)
+
+        if has_prepare_intent and ("chuẩn bị" in section or "chuan bi" in section or "chuẩn bị" in title or "chuan bi" in title):
+            score += 0.25
+        if has_connect_intent and ("kết nối" in section or "ket noi" in section or "kết nối" in title or "ket noi" in title):
+            score += 0.08
+
+        if score > best_score:
+            best_score = score
+            best = src
+
+    return best
 
 
 def _is_detail_followup(query: str) -> bool:
@@ -347,6 +641,55 @@ def _is_ambiguous_low_confidence(best_score: float, selected_sources: list[dict]
     return abs(best_score - second_score) <= 0.03
 
 
+def _should_force_hybrid_for_ambiguous_query(state: WorkflowState, selected_sources: list[dict]) -> bool:
+    intent = str(state.get("retrieval_intent", "") or "").strip().lower()
+    if intent != "ambiguous":
+        return False
+
+    query = (state.get("active_query") or state.get("query_text") or "").strip()
+    if len(query) > 16:
+        return False
+
+    has_docx_sources = any(str(s.get("source_type", "faq")) == "module_doc" for s in selected_sources)
+    return has_docx_sources and len(selected_sources) >= 1
+
+
+def _build_docx_hybrid_answer(selected_sources: list[dict], query: str) -> str:
+    """Return quick practical guidance + deep-dive options for ambiguous docx queries."""
+    lowered_query = (query or "").lower()
+    is_prepare_query = bool(re.search(r"\b(chuẩn bị|chuan bi|cần chuẩn bị|can chuan bi)\b", lowered_query))
+
+    stepwise = _build_stepwise_answer_from_chunks(selected_sources, max_steps=10)
+    step_lines = [
+        re.sub(r"^\d+\.\s+", "", ln).strip()
+        for ln in stepwise.splitlines()
+        if re.match(r"^\d+\.\s+", ln)
+    ]
+    step_lines = [_clean_docx_step_text(s) for s in step_lines]
+    step_lines = [s for s in step_lines if s]
+
+    if is_prepare_query:
+        preferred = [
+            s for s in step_lines
+            if any(k in s.lower() for k in ["chuẩn bị", "chuan bi", "máy trạm", "worklist", "key", "his"])
+        ]
+        if preferred:
+            step_lines = preferred
+
+    lines = ["Mình tóm tắt nhanh các bước chính như sau:"]
+    if step_lines:
+        for idx, step in enumerate(step_lines[:3], 1):
+            lines.append(f"{idx}. {step}")
+    else:
+        top = _pick_best_docx_source_for_query(selected_sources, query)
+        section_title = str(top.get("section_path", "") or top.get("source_title", "") or "tài liệu liên quan").strip()
+        lines.append(f"1. Mở mục: {section_title}.")
+        lines.append("2. Thực hiện lần lượt các thao tác trong mục này và lưu cấu hình.")
+
+    lines.append("Nếu cần, mình bung riêng từng mục 1, 2 hoặc 3.")
+    return "\n".join(lines)
+
+
 def extract_ocr_if_image(state: WorkflowState) -> dict:
     """Extract text from image if present."""
     cleaned_query = normalize_vietnamese(state.get("query_text", "").strip())
@@ -365,9 +708,10 @@ def extract_ocr_if_image(state: WorkflowState) -> dict:
     try:
         provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
         vision_base_url = config.VLLM_VISION_URL if provider == "vllm" else config.OLLAMA_BASE_URL
+        vision_model = config.VLLM_VISION_MODEL if provider == "vllm" else config.OLLAMA_VISION_MODEL
         vision_client = OllamaVision(
             base_url=vision_base_url,
-            model=config.OLLAMA_VISION_MODEL,
+            model=vision_model,
             timeout=90,
             provider=provider,
         )
@@ -433,72 +777,59 @@ def call_agent(state: WorkflowState) -> dict:
     ocr_text = state.get("ocr_text") or "Không có"
     emit_trace(logger, "agent", "start", state, query=active_query[:120])
 
-    # vLLM OpenAI endpoint in this deployment rejects default tool_choice=auto.
-    # Use deterministic forced tool-call path so retrieval flow keeps working.
+    context_block = f"\n\nLịch sử hội thoại gần nhất:\n{conversation_context}" if conversation_context else ""
+    source_block = f"\nTin nhắn trước liên quan đến: {last_source_hint}" if last_source_hint else ""
+
+    system_prompt = (
+        "Bạn là trợ lý helpdesk EHC, hỗ trợ nhân viên y tế dùng phần mềm HIS.\n\n"
+        "Hãy đọc lịch sử hội thoại bên dưới trước khi trả lời.\n"
+        "- Nếu câu hỏi là chào hỏi, cảm ơn, hỏi lại câu trước, hoặc hội thoại thông thường → trả lời trực tiếp, tự nhiên, KHÔNG gọi tool.\n"
+        "- Nếu câu hỏi cần tra cứu quy trình, lỗi phần mềm, hoặc hướng dẫn kỹ thuật → gọi search_faq_tool.\n"
+        "Không bịa thông tin kỹ thuật."
+        f"{context_block}{source_block}"
+    )
+
+    # vLLM: small model cannot reliably call tools, so always force retrieval.
+    # Conversational/greeting queries are handled naturally in generate_final_answer
+    # when retrieval returns nothing — the LLM answers from context there.
     if provider == "vllm":
         messages = list(state.get("messages", []))
+        user_message = HumanMessage(content=active_query)
         if not messages:
-            user_payload = {
-                "original_user_question": state.get("query_text", ""),
-                "current_search_query": active_query,
-                "ocr_text": ocr_text,
-                "conversation_context": conversation_context or "Không có",
-                "last_source_hint": last_source_hint or "Không có",
-            }
-            user_message = HumanMessage(content=json.dumps(user_payload, ensure_ascii=False, indent=2))
             response = _forced_search_tool_call(active_query)
             emit_trace(logger, "agent", "end", state, tool_calls=1, outcome="forced_vllm")
             return {"messages": [user_message, response]}
-
         response = _forced_search_tool_call(active_query)
         emit_trace(logger, "agent", "end", state, tool_calls=1, outcome="forced_vllm_follow_up")
         return {"messages": [response]}
 
-    llm_with_tools = _build_agent_model(provider).bind_tools(__import__("apps.agent_runtime.app.graph.tools", fromlist=["available_tools"]).available_tools)
-
-    system_prompt_spec = {
-        "role": "internal_helpdesk_agent",
-        "language": "vi-VN",
-        "tooling_policy": {
-            "default_action": "call_search_faq_tool",
-            "when_to_answer_directly": [
-                "short_social_greeting",
-                "question_clearly_outside_helpdesk_scope",
-            ],
-            "followup_behavior": "preserve_conversation_continuity_using_context_and_last_source_hint",
-            "forbidden": ["fabricate_source", "answer_operational_question_without_retrieval"],
-        },
-        "direct_answer_constraints": {
-            "tone": "natural_and_brief",
-            "max_sentences": 3,
-        },
-    }
-    system_prompt = "PromptSpec(JSON):\n" + json.dumps(system_prompt_spec, ensure_ascii=False, indent=2)
+    llm_with_tools = _build_agent_model(provider).bind_tools(
+        __import__("apps.agent_runtime.app.graph.tools", fromlist=["available_tools"]).available_tools
+    )
 
     try:
+        from shared.py.clients.ollama_client import _write_thinking_log as _wtl
+
+        def _clean_response(msg) -> object:
+            # Capture Qwen3 reasoning_content before stripping
+            reasoning = getattr(msg, "reasoning_content", None) or ""
+            if not reasoning:
+                reasoning = (getattr(msg, "additional_kwargs", {}) or {}).get("reasoning_content", "")
+            if reasoning:
+                _wtl(f"<think>{reasoning}</think>")
+            if isinstance(msg.content, str):
+                msg.content = _strip_thinking(msg.content)
+            return msg
+
         messages = list(state.get("messages", []))
         if not messages:
-            user_payload = {
-                "original_user_question": state.get("query_text", ""),
-                "current_search_query": active_query,
-                "ocr_text": ocr_text,
-                "conversation_context": conversation_context or "Không có",
-                "last_source_hint": last_source_hint or "Không có",
-            }
-            user_message = HumanMessage(content=json.dumps(user_payload, ensure_ascii=False, indent=2))
-            response = llm_with_tools.invoke([SystemMessage(content=system_prompt), user_message])
-            if not (getattr(response, "tool_calls", None) or []) and not _has_tool_result(state):
-                logger.warning("Agent skipped retrieval on first step; forcing search_faq_tool")
-                response = _forced_search_tool_call(active_query)
+            user_message = HumanMessage(content=active_query)
+            response = _clean_response(llm_with_tools.invoke([SystemMessage(content=system_prompt), user_message]))
             logger.info("Agent generated first-step response")
             emit_trace(logger, "agent", "end", state, tool_calls=len(getattr(response, "tool_calls", None) or []), outcome="first_step")
             return {"messages": [user_message, response]}
 
-        response = llm_with_tools.invoke([SystemMessage(content=system_prompt)] + messages[-8:])
-        needs_forced_search = not (getattr(response, "tool_calls", None) or []) and not _has_valid_tool_result(state)
-        if needs_forced_search:
-            logger.warning("Agent skipped retrieval on follow-up; forcing search_faq_tool")
-            response = _forced_search_tool_call(active_query)
+        response = _clean_response(llm_with_tools.invoke([SystemMessage(content=system_prompt)] + messages[-8:]))
         logger.info("Agent generated follow-up response")
         emit_trace(logger, "agent", "end", state, tool_calls=len(getattr(response, "tool_calls", None) or []), outcome="follow_up")
         return {"messages": [response]}
@@ -516,31 +847,6 @@ def call_agent(state: WorkflowState) -> dict:
             "error": f"LLM unavailable: {exc}",
         }
 
-
-def natural_chat(state: WorkflowState) -> dict:
-    """Handle short natural conversation turns without calling retrieval tools."""
-
-    emit_trace(logger, "natural_chat", "start", state)
-    import re as _re
-    query = (state.get("query_text") or "").strip().lower()
-    words = set(_re.split(r"[\s,.!?;:\-\+/\\]+", query))
-
-    if any(token in query for token in ["cảm ơn", "cam on", "thanks", "thank you"]):
-        answer = "Không có gì ạ. Bạn cần mình tra cứu thêm phần nào nữa không?"
-    elif any(token in words for token in ["hello", "hi", "chào", "chao"]) or "xin chào" in query or "xin chao" in query:
-        answer = "Chào bạn, mình sẵn sàng hỗ trợ. Bạn cần tra cứu thao tác nào trong hệ thống?"
-    elif any(token in query for token in ["bạn là ai", "ban la ai"]):
-        answer = "Mình là trợ lý helpdesk nội bộ, có thể tra cứu quy trình/ticket theo câu hỏi của bạn."
-    else:
-        answer = "Mình đang ở chế độ trò chuyện nhanh. Bạn mô tả thao tác cần hỗ trợ, mình sẽ tra cứu chi tiết giúp bạn."
-
-    emit_trace(logger, "natural_chat", "end", state, outcome="answered")
-    return {
-        "final_answer": answer,
-        "sources": [],
-        "image_urls": [],
-        "error": None,
-    }
 
 
 def llm_unavailable(state: WorkflowState) -> dict:
@@ -578,6 +884,7 @@ def grade_documents(state: WorkflowState) -> dict:
 
     payload = parse_tool_payload(str(tool_message.content))
     chunks = payload.get("chunks", []) if isinstance(payload.get("chunks"), list) else []
+    retrieval_intent = str(payload.get("intent", "") or "")
     active_query = state.get("active_query") or payload.get("query") or state.get("merged_query") or state.get("query_text", "")
 
     if not chunks:
@@ -588,6 +895,7 @@ def grade_documents(state: WorkflowState) -> dict:
             "is_relevant": "no",
             "grading_reason": reason,
             "last_tool_name": getattr(tool_message, "name", None),
+            "retrieval_intent": retrieval_intent,
             "retrieval_debug": _append_retrieval_debug(
                 state,
                 {"query": active_query, "decision": "no", "reason": reason, "chunks": 0},
@@ -598,15 +906,16 @@ def grade_documents(state: WorkflowState) -> dict:
     for index, chunk in enumerate(chunks[:3], 1):
         # Use up to 300 chars of content_brief for grader context
         content_preview = chunk.get('content_brief', '')[:300]
+        source_key = chunk.get("source_id") or chunk.get("issue_id", "unknown")
         context_lines.append(
-            f"{index}. issue_id={chunk.get('issue_id', 'unknown')}, score={float(chunk.get('score', 0)):.2f}\n   Content: {content_preview}"
+            f"{index}. source_id={source_key}, score={float(chunk.get('score', 0)):.2f}\n   Content: {content_preview}"
         )
 
     # Log chunk previews so we can debug what was graded
     for i, chunk in enumerate(chunks[:3], 1):
         logger.debug(
-            "TRACE|node=grade_documents|phase=chunk_preview|rank=%d|issue_id=%s|score=%.4f|content=%s",
-            i, chunk.get('issue_id', '?'), float(chunk.get('score', 0)),
+            "TRACE|node=grade_documents|phase=chunk_preview|rank=%d|source_id=%s|score=%.4f|content=%s",
+            i, chunk.get('source_id', chunk.get('issue_id', '?')), float(chunk.get('score', 0)),
             chunk.get('content_brief', '')[:200],
         )
 
@@ -622,9 +931,10 @@ def grade_documents(state: WorkflowState) -> dict:
 
     provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
     llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
+    grader_model = config.VLLM_LLM_MODEL if provider == "vllm" else config.OLLAMA_GRADER_MODEL
     grader = OllamaChat(
         base_url=llm_base_url,
-        model=config.OLLAMA_GRADER_MODEL,
+        model=grader_model,
         timeout=60,
         provider=provider,
     )
@@ -685,6 +995,7 @@ def grade_documents(state: WorkflowState) -> dict:
         "is_relevant": grade,
         "grading_reason": grader_reason,
         "last_tool_name": getattr(tool_message, "name", None),
+        "retrieval_intent": retrieval_intent,
         "retrieval_debug": _append_retrieval_debug(
             state,
             {
@@ -720,9 +1031,10 @@ def rewrite_query(state: WorkflowState) -> dict:
 
     provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
     llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
+    rewrite_model = config.VLLM_LLM_MODEL if provider == "vllm" else config.OLLAMA_REWRITE_MODEL
     rewriter = OllamaChat(
         base_url=llm_base_url,
-        model=config.OLLAMA_REWRITE_MODEL,
+        model=rewrite_model,
         timeout=60,
         provider=provider,
     )
@@ -776,7 +1088,42 @@ def generate_final_answer(state: WorkflowState) -> dict:
 
         error_reason = state.get("grading_reason") or state.get("error") or "Không tìm thấy tài liệu phù hợp"
         logger.warning("Final answer falling back: %s", error_reason)
-        emit_trace(logger, "generate_final_answer", "end", state, outcome="fallback", error=error_reason, sources=0)
+
+        # Try LLM direct answer before showing the template — handles greetings,
+        # meta-questions, and anything that simply didn't match any document.
+        try:
+            provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+            llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
+            conversation_context = (state.get("conversation_context") or "").strip()
+            context_block = f"\n\nLịch sử hội thoại:\n{conversation_context}" if conversation_context else ""
+            fallback_system = (
+                "Bạn là trợ lý helpdesk EHC. Trả lời tự nhiên, thân thiện bằng tiếng Việt."
+                " Nếu là câu hỏi chào hỏi hoặc hội thoại thông thường, trả lời bình thường."
+                " Nếu là câu hỏi kỹ thuật mà bạn không có đủ thông tin, hỏi thêm chi tiết thay vì bịa đặt."
+                f"{context_block}"
+            )
+            chat_model = config.VLLM_LLM_MODEL if provider == "vllm" else config.OLLAMA_LLM_MODEL
+            chat_client = OllamaChat(
+                base_url=llm_base_url,
+                model=chat_model,
+                timeout=30,
+                provider=provider,
+            )
+            llm_fallback = _strip_thinking(chat_client.generate(
+                prompt=state.get("query_text", ""),
+                system_prompt=fallback_system,
+            ))
+            if llm_fallback:
+                emit_trace(logger, "generate_final_answer", "end", state, outcome="llm_fallback", sources=0)
+                return {
+                    "final_answer": llm_fallback,
+                    "sources": [],
+                    "image_urls": [],
+                }
+        except Exception as exc:
+            logger.warning("LLM fallback failed, using template: %s", exc)
+
+        emit_trace(logger, "generate_final_answer", "end", state, outcome="template_fallback", error=error_reason, sources=0)
         return {
             "final_answer": _build_guided_fallback_answer(state, error_reason),
             "sources": [],
@@ -790,121 +1137,277 @@ def generate_final_answer(state: WorkflowState) -> dict:
     best_chunk = ranked_chunks[0]
 
     answer_text = best_chunk.get("content_brief", "")
-    issue_id = best_chunk.get("issue_id", "unknown")
+    issue_id = best_chunk.get("issue_id") or best_chunk.get("source_id", "unknown")
+    source_id = best_chunk.get("source_id") or issue_id
+    source_type = best_chunk.get("source_type", "faq")
+    source_title = best_chunk.get("source_title", "")
     attachment_urls = best_chunk.get("attachment_urls", [])
     source_url = best_chunk.get("source_url", "")
     score = best_chunk.get("score", 0)
+    has_doc_context = source_type == "module_doc" or any(
+        str(c.get("source_type", "faq") or "faq") == "module_doc" for c in ranked_chunks[:3]
+    )
+    is_doc_flow = has_doc_context and (
+        _is_doc_flow_query(active_query) or _is_progress_followup_query(active_query)
+    )
     confidence = _confidence_label(float(score))
     logger.info(
-        "TRACE|node=generate_final_answer|phase=best_chunk|issue_id=%s|vec_score=%.4f|confidence=%s",
-        issue_id, float(score), confidence,
+        "TRACE|node=generate_final_answer|phase=best_chunk|source_id=%s|source_type=%s|vec_score=%.4f|confidence=%s",
+        source_id, source_type, float(score), confidence,
     )
 
-    top_chunks = ranked_chunks[:2]
-    selected_sources = _select_similar_sources(ranked_chunks)
+    top_chunks = _collect_module_doc_context_chunks(ranked_chunks, max_chunks=8) if is_doc_flow else ranked_chunks[:4]
+    if is_doc_flow:
+        top_chunks = _augment_module_doc_flow_chunks(top_chunks, active_query, max_chunks=8)
+    selected_sources = top_chunks if is_doc_flow else _select_similar_sources(ranked_chunks)
+    ambiguity_reason = ""
 
-    if _is_ambiguous_low_confidence(float(score), selected_sources):
-        related_ids = [str(s.get("issue_id", "")).strip() for s in selected_sources if str(s.get("issue_id", "")).strip()]
+    if _is_ambiguous_low_confidence(float(score), selected_sources) or _should_force_hybrid_for_ambiguous_query(state, selected_sources):
+        related_ids = [
+            str(s.get("source_id", s.get("issue_id", ""))).strip()
+            for s in selected_sources
+            if str(s.get("source_id", s.get("issue_id", ""))).strip()
+        ]
+        has_docx_sources = any(str(s.get("source_type", "faq")) == "module_doc" for s in selected_sources)
         ambiguity_reason = (
             "Nhiều ticket gần nghĩa có điểm tương đương, chưa đủ chắc để chốt nguyên nhân duy nhất"
         )
         if related_ids:
             ambiguity_reason += f" (ứng viên: {', '.join('#' + rid for rid in related_ids[:3])})"
-        emit_trace(
-            logger,
-            "generate_final_answer",
-            "end",
-            state,
-            outcome="guided_fallback_ambiguous",
-            issue_id=issue_id,
-            sources=len(selected_sources),
-            best_score=round(float(score), 4),
-        )
-        return {
-            "final_answer": _build_guided_fallback_answer(state, ambiguity_reason),
-            "sources": [
-                {
-                    "issue_id": str(chunk.get("issue_id", "unknown")),
-                    "snippet": str(chunk.get("content_brief", "") or "")[:150],
-                    "url": str(chunk.get("source_url", "") or ""),
-                    "score": float(chunk.get("score", 0.0) or 0.0),
-                }
-                for chunk in selected_sources
-            ],
-            "image_urls": attachment_urls,
-            "error": ambiguity_reason,
-        }
 
-    context_lines = []
+        # For module-doc flow questions, keep going with richer context instead of early short fallback.
+        if is_doc_flow:
+            logger.info("Module-doc flow query detected: bypass ambiguous fallback and continue with full context")
+        else:
+            emit_trace(
+                logger,
+                "generate_final_answer",
+                "end",
+                state,
+                outcome="guided_fallback_ambiguous",
+                issue_id=issue_id,
+                sources=len(selected_sources),
+                best_score=round(float(score), 4),
+            )
+            if has_docx_sources:
+                ambiguous_answer = _build_docx_hybrid_answer(selected_sources, active_query)
+            else:
+                # Let the LLM reply naturally using the candidate chunks as soft context.
+                try:
+                    provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
+                    llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
+                    conversation_context = (state.get("conversation_context") or "").strip()
+                    context_block = f"\n\nLịch sử hội thoại:\n{conversation_context}" if conversation_context else ""
+                    ambiguous_system = (
+                        "Bạn là trợ lý helpdesk EHC. Trả lời tự nhiên, thân thiện bằng tiếng Việt."
+                        " Nếu câu hỏi chưa rõ, hỏi thêm để hiểu vấn đề. Không bịa thông tin kỹ thuật."
+                        f"{context_block}"
+                    )
+                    chat_model = config.VLLM_LLM_MODEL if provider == "vllm" else config.OLLAMA_LLM_MODEL
+                    chat_client = OllamaChat(
+                        base_url=llm_base_url, model=chat_model, timeout=30, provider=provider,
+                    )
+                    ambiguous_answer = _strip_thinking(chat_client.generate(
+                        prompt=active_query, system_prompt=ambiguous_system,
+                    )) or _build_guided_fallback_answer(state, ambiguity_reason)
+                except Exception as exc:
+                    logger.warning("Ambiguous LLM fallback failed: %s", exc)
+                    ambiguous_answer = _build_guided_fallback_answer(state, ambiguity_reason)
+
+            return {
+                "final_answer": ambiguous_answer,
+                "sources": [
+                    {
+                        "issue_id": str(chunk.get("issue_id", "unknown")),
+                        "source_id": str(chunk.get("source_id", chunk.get("issue_id", "unknown"))),
+                        "source_type": str(chunk.get("source_type", "faq")),
+                        "source_title": str(chunk.get("source_title", "") or ""),
+                        "snippet": str(chunk.get("content_brief", "") or "")[:150],
+                        "url": str(chunk.get("source_url", "") or ""),
+                        "score": float(chunk.get("score", 0.0) or 0.0),
+                    }
+                    for chunk in selected_sources
+                ],
+                "image_urls": attachment_urls,
+            }
+
+    # ⭐ NEW: Load images from retrieved chunks
+    MAX_IMAGES_PER_QUERY = 15
+    image_storage = ImageStorage(base_dir=str(_REPO_ROOT / "data" / "docx_images"))
+    all_images = []
+    
+    for chunk in top_chunks:
+        chunk_image_ids = chunk.get("image_ids", [])
+        if not chunk_image_ids:
+            continue
+        
+        for img_id in chunk_image_ids:
+            if len(all_images) >= MAX_IMAGES_PER_QUERY:
+                break
+            
+            try:
+                img_bytes = image_storage.get_image_bytes(img_id)
+                if img_bytes:
+                    img_metadata = image_storage.get_image_metadata(img_id)
+                    all_images.append({
+                        "id": img_id,
+                        "data": base64.b64encode(img_bytes).decode('utf-8'),
+                        "alt_text": img_metadata.get("alt_text", "") if img_metadata else "",
+                        "source_file": img_metadata.get("source_file", "") if img_metadata else "",
+                    })
+                    logger.info(f"Loaded image {img_id} from chunk (alt_text: {len(img_metadata.get('alt_text', '') if img_metadata else '')} chars)")
+            except Exception as e:
+                logger.warning(f"Failed to load image {img_id}: {e}")
+        
+        if len(all_images) >= MAX_IMAGES_PER_QUERY:
+            break
+    
+    logger.info(f"Total images loaded for LLM: {len(all_images)}")
+    
+    context_blocks = []
     for idx, chunk in enumerate(top_chunks, 1):
-        chunk_issue_id = chunk.get("issue_id", "unknown")
-        chunk_score = chunk.get("score", 0)
-        chunk_brief = chunk.get("content_brief", "").strip()
-        context_lines.append(
-            f"{idx}. issue_id={chunk_issue_id}, score={chunk_score:.2f}, content_brief={chunk_brief}"
-        )
+        chunk_title = str(chunk.get("source_title", "") or "").strip()
+        section_path = str(chunk.get("section_path", "") or "").strip()
+        chunk_full = str(chunk.get("content_full", "") or "").strip()
+        chunk_brief = str(chunk.get("content_brief", "") or "").strip()
+        source_id_label = str(chunk.get("source_id", chunk.get("issue_id", "")) or "").strip()
+        source_type_label = str(chunk.get("source_type", "faq") or "faq").strip()
 
-    context_text = "\n".join(context_lines)
+        if not chunk_full:
+            chunk_full = chunk_brief
+
+        # Keep a detailed but bounded block for the LLM.
+        block_lines = [f"Chunk {idx}:"]
+        if source_type_label:
+            block_lines.append(f"source_type: {source_type_label}")
+        if source_id_label:
+            block_lines.append(f"source_id: {source_id_label}")
+        if chunk_title:
+            block_lines.append(f"title: {chunk_title}")
+        if section_path:
+            block_lines.append(f"section: {section_path}")
+        block_lines.append("content:")
+        block_lines.append(chunk_full[:1800])
+        if chunk_brief and chunk_brief != chunk_full[: len(chunk_brief)]:
+            block_lines.append("brief:")
+            block_lines.append(chunk_brief[:400])
+
+        context_blocks.append("\n".join(block_lines))
+
+    context_text = "\n\n---\n\n".join(context_blocks)
     user_query = state.get("active_query") or state.get("query_text", "")
     detail_followup = _is_detail_followup(user_query)
+    progress_followup = _is_progress_followup_query(user_query)
     ocr_text = state.get("ocr_text")
     grading_reason = state.get("grading_reason") or ""
     conversation_context = (state.get("conversation_context") or "").strip()
     last_source_hint = (state.get("last_source_hint") or "").strip()
 
-    prompt_payload = {
-        "request": {
-            "user_question": user_query,
-            # Structured analysis from VL model: [TEXT] raw text, [ISSUE] what went wrong,
-            # [CAUSE] root cause, [ACTION] suggested fix. Use this to understand the image context.
-            "image_analysis": ocr_text or "Không có",
-            "retrieved_context": context_text,
-            "retrieval_assessment": grading_reason or "Không có",
-            "conversation_context": conversation_context or "Không có",
-            "last_source_hint": last_source_hint or "Không có",
-        }
-    }
-    prompt = json.dumps(prompt_payload, ensure_ascii=False, indent=2)
+    retrieval_assessment = grading_reason or "Không có"
+    if ambiguity_reason:
+        retrieval_assessment = f"{retrieval_assessment} | {ambiguity_reason}"
+
+    prompt_parts = [f"Câu hỏi: {user_query}"]
+    if conversation_context:
+        prompt_parts.append(f"\nLịch sử hội thoại:\n{conversation_context}")
+    if last_source_hint:
+        prompt_parts.append(f"\nChủ đề trước: {last_source_hint}")
+    if ocr_text:
+        prompt_parts.append(f"\nNội dung ảnh màn hình:\n{ocr_text}")
+    prompt_parts.append(f"\nThông tin tra cứu:\n{context_text}")
+    if retrieval_assessment and retrieval_assessment != "Không có":
+        prompt_parts.append(f"\nĐánh giá tìm kiếm: {retrieval_assessment}")
+    prompt_parts.append("\nDựa vào thông tin trên, trả lời câu hỏi của người dùng.")
+    prompt = "\n".join(prompt_parts)
 
     final_answer = ""
+    has_prefilled_deterministic_answer = False
+    if is_doc_flow and progress_followup:
+        progress_answer = _build_progress_followup_answer(top_chunks, user_query)
+        if progress_answer:
+            final_answer = progress_answer
+            has_prefilled_deterministic_answer = True
+            logger.info("Generated progress follow-up answer from doc flow context")
+    elif is_doc_flow:
+        deterministic_doc_flow = _build_doc_flow_answer_by_sections(top_chunks, max_sections=5, max_points_per_section=3)
+        if deterministic_doc_flow:
+            final_answer = deterministic_doc_flow
+            has_prefilled_deterministic_answer = True
+            logger.info("Generated section-based deterministic doc-flow answer")
+
     try:
         provider = (state.get("model_provider") or config.MODEL_PROVIDER or "ollama").strip().lower()
         llm_base_url = config.VLLM_LLM_URL if provider == "vllm" else config.OLLAMA_BASE_URL
-        chat_client = OllamaChat(
-            base_url=llm_base_url,
-            model=config.OLLAMA_LLM_MODEL,
-            timeout=120,
-            provider=provider,
+        
+        natural_system_prompt = (
+            "/no_think\n"
+            "Bạn là trợ lý helpdesk nội bộ của hệ thống y tế EHC, hỗ trợ nhân viên tra cứu quy trình và xử lý sự cố phần mềm HIS.\n\n"
+            "Nguyên tắc trả lời:\n"
+            "- Trả lời tự nhiên, thân thiện như đồng nghiệp — không cứng nhắc, không mẫu hóa.\n"
+            "- Dùng thông tin từ tài liệu/ticket được cung cấp. Không bịa đặt thông tin kỹ thuật.\n"
+            "- Nếu câu hỏi hỏi về các bước, liệt kê rõ từng bước theo thứ tự.\n"
+            "- Nếu câu hỏi hỏi nguyên nhân lỗi, nêu nguyên nhân cụ thể trước rồi mới hướng dẫn.\n"
+            "- Không dùng Markdown (***, ##, ---). Không thêm 'Nguồn:' hay citation ở cuối.\n"
+            "- Ngắn gọn, đủ thông tin — không lan man."
         )
-        response_prompt_spec = {
-            "role": "internal_helpdesk_responder",
-            "language": "vi-VN",
-            "grounding": {
-                "allowed_sources": ["image_analysis", "retrieved_context", "conversation_context"],
-                "source_priority": "image_analysis describes the screen and visible error (from screenshot); retrieved_context contains actual root causes and fix steps from historical tickets — use retrieved_context as the primary source for diagnosis and solution, use image_analysis only to understand what the user is seeing",
-                "if_missing_data": "state_which_information_is_missing",
-                "forbidden": ["fabrication", "generic_advice_without_specific_target"],
-            },
-            "style": {
-                "voice": "natural_colleague_chat",
-                "opening": "skip_template_openings",
-                "closing": "skip_template_closings",
-                "focus": "state_key_cause_or_action_first",
-            },
-            "reasoning_behavior": {
-                "preserve_contrasts_and_exceptions": True,
-                "followup": "go_deeper_on_requested_part_not_repetition",
-            },
-            "output": {
-                "target_length_lines": "5-10",
-                "actionability": "must_be_concrete_and_executable",
-            },
-        }
-        llm_answer = chat_client.generate(
-            prompt=prompt,
-            system_prompt="PromptSpec(JSON):\n" + json.dumps(response_prompt_spec, ensure_ascii=False, indent=2),
-        )
-        if len(llm_answer.strip()) < 120:
+        
+        # If progress follow-up already has a deterministic high-quality answer, skip LLM.
+        if final_answer:
+            llm_answer = final_answer
+        # ⭐ Use vision model if we have images from DOCX chunks
+        elif all_images:
+            logger.info(f"Using vision model with {len(all_images)} images from DOCX chunks")
+            vision_llm_model = config.VLLM_VISION_MODEL if provider == "vllm" else config.OLLAMA_LLM_MODEL
+            vision_client = OllamaVision(
+                base_url=llm_base_url,
+                model=vision_llm_model,
+                timeout=180,
+                provider=provider,
+            )
+            
+            # Build enhanced prompt with image context
+            image_context_lines = []
+            for idx, img in enumerate(all_images, 1):
+                alt_text = img.get("alt_text", "").strip()
+                source_file = img.get("source_file", "").strip()
+                if alt_text:
+                    image_context_lines.append(f"Image {idx} (from {source_file}): {alt_text[:200]}")
+                else:
+                    image_context_lines.append(f"Image {idx} (from {source_file}): [No OCR text available]")
+            
+            enhanced_prompt_payload = dict(prompt_payload)
+            enhanced_prompt_payload["request"]["docx_images_context"] = "\n".join(image_context_lines)
+            enhanced_prompt = json.dumps(enhanced_prompt_payload, ensure_ascii=False, indent=2)
+            
+            # Extract base64 image data
+            image_data_list = [img["data"] for img in all_images]
+            
+            llm_answer = vision_client.generate_with_images(
+                prompt=enhanced_prompt,
+                images=image_data_list,
+                system_prompt=natural_system_prompt,
+            )
+            logger.info(f"Vision model generated answer with {len(all_images)} images")
+        else:
+            # Text-only mode (faster)
+            logger.info("Using text-only model (no DOCX images)")
+            chat_llm_model = config.VLLM_LLM_MODEL if provider == "vllm" else config.OLLAMA_LLM_MODEL
+            chat_client = OllamaChat(
+                base_url=llm_base_url,
+                model=chat_llm_model,
+                timeout=120,
+                provider=provider,
+            )
+            llm_answer = chat_client.generate(
+                prompt=prompt,
+                system_prompt=natural_system_prompt,
+            )
+        llm_answer = _strip_thinking(llm_answer)
+        if is_doc_flow and (not has_prefilled_deterministic_answer) and len([ln for ln in llm_answer.splitlines() if ln.strip()]) < 6:
+            deterministic = _build_stepwise_answer_from_chunks(top_chunks, max_steps=10)
+            if deterministic:
+                llm_answer = deterministic
+        elif len(llm_answer.strip()) < 120:
             fallback_steps = _extract_steps_from_chunk_text(answer_text)
             if fallback_steps:
                 step_lines = "\n".join([f"{idx}. {step}" for idx, step in enumerate(fallback_steps, 1)])
@@ -955,7 +1458,10 @@ def generate_final_answer(state: WorkflowState) -> dict:
     for chunk in selected_sources:
         sources.append(
             {
-                "issue_id": str(chunk.get("issue_id", "unknown")),
+                "issue_id": str(chunk.get("issue_id", chunk.get("source_id", "unknown"))),
+                "source_id": str(chunk.get("source_id", chunk.get("issue_id", "unknown"))),
+                "source_type": str(chunk.get("source_type", "faq")),
+                "source_title": str(chunk.get("source_title", "") or ""),
                 "snippet": str(chunk.get("content_brief", "") or "")[:150],
                 "url": str(chunk.get("source_url", "") or ""),
                 "score": float(chunk.get("score", 0.0) or 0.0),

@@ -1,0 +1,52 @@
+---
+title: Biểu đồ Tuần tự — Luồng xử lý câu hỏi (EHC AI Helpdesk MVP)
+---
+sequenceDiagram
+    actor User as 👤 Nhân viên IT
+    participant TG as Telegram Bot
+    participant API as FastAPI Gateway<br/>:8000
+    participant LG as LangGraph Agent
+    participant VIS as Vision Model<br/>qwen2.5vl:7b
+    participant EMB as Embeddings<br/>bge-m3
+    participant QD as Qdrant<br/>:6333
+    participant LLM as LLM<br/>qwen2.5:14b
+
+    User->>TG: Gửi tin nhắn (text + ảnh?)
+    TG->>TG: Phát hiện loại message
+
+    alt Có ảnh đính kèm
+        TG->>VIS: Gửi ảnh để OCR
+        VIS-->>TG: Mô tả nội dung ảnh (text)
+        TG->>TG: Ghép OCR vào câu hỏi gốc
+    end
+
+    TG->>API: POST /api/v1/ask<br/>{query, thread_id}
+    API->>API: Validate request (Pydantic)
+    API->>LG: Khởi tạo AgentState<br/>invoke graph
+
+    LG->>LLM: call_agent() — phân tích câu hỏi
+    LLM-->>LG: Quyết định: gọi search_faq_tool
+
+    LG->>EMB: Embed query
+    EMB-->>LG: Query vector (1024 dim)
+    LG->>QD: Tìm kiếm cosine similarity<br/>collection: ehc_faq, top_k=5
+    QD-->>LG: Trả về top-k chunks + metadata
+
+    LG->>LLM: grade_documents()<br/>Đánh giá độ liên quan
+    LLM-->>LG: Kết quả grading
+
+    alt Kết quả không liên quan (retry < 2)
+        LG->>LLM: rewrite_query()
+        LLM-->>LG: Query đã viết lại
+        LG->>EMB: Embed query mới
+        EMB-->>LG: Vector mới
+        LG->>QD: Tìm kiếm lại
+        QD-->>LG: Kết quả mới
+    end
+
+    LG->>LLM: generate_final_answer()<br/>Tổng hợp câu trả lời
+    LLM-->>LG: Câu trả lời hoàn chỉnh
+
+    LG-->>API: AgentState cuối cùng
+    API-->>TG: JSON {answer, ticket_url?}
+    TG->>User: Gửi câu trả lời (+ link ticket nếu có)

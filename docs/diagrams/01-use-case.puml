@@ -1,0 +1,55 @@
+@startuml Use Case - EHC AI Helpdesk MVP
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecaseBackgroundColor #E8F4FD
+skinparam usecaseBorderColor #2980B9
+skinparam actorBorderColor #2C3E50
+skinparam arrowColor #2C3E50
+
+title Biểu đồ Use Case Tổng Quát — EHC AI Helpdesk MVP
+
+left to right direction
+
+actor "Người dùng hệ thống" as BaseUser
+actor "Nhân viên IT" as ITUser
+actor "Bác sĩ" as Doctor
+actor "Quản trị viên" as Admin
+actor "Telegram" as Telegram
+actor "Redmine" as Redmine
+
+ITUser --|> BaseUser
+Doctor --|> BaseUser
+
+rectangle "EHC AI Helpdesk MVP" {
+  usecase "UC01\nGửi yêu cầu hỗ trợ" as UC01
+  usecase "UC02\nGửi ảnh lỗi / mô tả lỗi" as UC02
+  usecase "UC03\nTra cứu tri thức hỗ trợ" as UC03
+  usecase "UC04\nNhận câu trả lời\ntự động" as UC04
+  usecase "UC05\nXem ticket liên quan" as UC05
+  usecase "UC06\nQuản lý dữ liệu tri thức" as UC06
+  usecase "UC07\nGiám sát và quản trị\nhệ thống" as UC07
+}
+
+' Primary actors
+BaseUser --> UC01
+BaseUser --> UC02
+BaseUser --> UC04
+BaseUser --> UC05
+
+Admin --> UC06
+Admin --> UC07
+
+' Secondary actors
+Telegram --> UC01
+Telegram --> UC02
+Telegram --> UC04
+Redmine --> UC05
+Redmine --> UC06
+
+' Relationships between use cases
+UC01 .> UC03 : <<include>>
+UC02 .> UC03 : <<include>>
+UC03 .> UC04 : <<include>>
+UC04 .> UC05 : <<extend>>\n[khi có ticket phù hợp]
+
+@enduml

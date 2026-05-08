@@ -1,0 +1,28 @@
+{
+  "description": "POC routing eval for FAQ quick answers vs DOCX deep guidance",
+  "cases": [
+    {"case_id": "QF01", "query": "cách gộp mã bệnh nhân", "expected_mode": "faq"},
+    {"case_id": "QF02", "query": "in báo cáo pttt theo tháng", "expected_mode": "faq"},
+
+    {"case_id": "QD01", "query": "cấu hình pacs server và port dicom", "expected_mode": "docx"},
+    {"case_id": "QD02", "query": "hướng dẫn module PACS từ đầu đến cuối", "expected_mode": "docx"},
+    {"case_id": "QD03", "query": "tạo phòng kết nối pacs và cài đặt thông số", "expected_mode": "docx"},
+    {"case_id": "QD04", "query": "cấu hình gửi kết quả sang PACS như thế nào", "expected_mode": "docx"},
+    {"case_id": "QD05", "query": "các bước chuẩn bị trước khi kết nối MiniPACS", "expected_mode": "docx"},
+    {"case_id": "QD06", "query": "thiết lập worklist port trong PACS", "expected_mode": "docx"},
+    {"case_id": "QD07", "query": "hướng dẫn cấu hình đẩy ảnh lên PACS với máy non-dicom", "expected_mode": "docx"},
+    {"case_id": "QD08", "query": "chi tiết từng bước kết nối minipacs", "expected_mode": "docx"},
+
+    {"case_id": "HA01", "query": "PACS", "expected_mode": "hybrid"},
+    {"case_id": "HA02", "query": "MiniPACS", "expected_mode": "hybrid"},
+    {"case_id": "HA03", "query": "port dicom", "expected_mode": "hybrid"},
+    {"case_id": "HA04", "query": "worklist", "expected_mode": "hybrid"},
+
+    {"case_id": "QD09", "query": "module danh mục loại dịch vụ cấu hình cđha", "expected_mode": "docx"},
+    {"case_id": "QD10", "query": "hướng dẫn kết nối PACS server và lưu cấu hình", "expected_mode": "docx"},
+    {"case_id": "QD11", "query": "cần chuẩn bị gì phía bệnh viện để triển khai pacs", "expected_mode": "docx"},
+    {"case_id": "QD12", "query": "đẩy hình DICOM lên PACS bằng cấu hình nào", "expected_mode": "docx"},
+    {"case_id": "QD13", "query": "chỉ định thư mục lưu trữ hình ảnh trong PACS", "expected_mode": "docx"},
+    {"case_id": "QD14", "query": "module PACS có các bước chính nào", "expected_mode": "docx"}
+  ]
+}

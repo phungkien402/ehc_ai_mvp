@@ -24,10 +24,12 @@ from app.schemas import (
     DashboardLogEntry,
     DashboardLogsResponse,
     DashboardOverviewResponse,
+    GpuInfo,
     HealthResponse,
     OCRRequest,
     OCRResponse,
     SourceInfo,
+    SystemStatsResponse,
     WorkflowDiagramResponse,
 )
 from shared.py.utils.logging import setup_logging
@@ -243,6 +245,9 @@ async def ask_question(request: AskRequest):
         sources = [
             SourceInfo(
                 issue_id=s.get("issue_id", ""),
+                source_id=s.get("source_id"),
+                source_type=s.get("source_type"),
+                source_title=s.get("source_title"),
                 snippet=s.get("snippet", ""),
                 url=s.get("url", ""),
                 score=s.get("score", 0)
@@ -454,3 +459,83 @@ async def dashboard_workflow():
     content = workflow_path.read_text(encoding="utf-8")
     modified = int(workflow_path.stat().st_mtime * 1000)
     return WorkflowDiagramResponse(content=content, last_modified_epoch_ms=modified)
+
+
+# ── GPU collection via nvidia-smi ─────────────────────────────────────────────
+def _collect_gpus() -> list[GpuInfo]:
+    """Parse nvidia-smi CSV output. Returns [] if no GPU or nvidia-smi absent."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,name,utilization.gpu,memory.used,memory.total,"
+                "temperature.gpu,power.draw,power.limit",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+        gpus: list[GpuInfo] = []
+        for line in result.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 5:
+                continue
+            def _f(s: str) -> float | None:
+                try: return float(s)
+                except Exception: return None
+            idx = int(parts[0]) if parts[0].isdigit() else len(gpus)
+            mem_used  = _f(parts[3]) or 0.0
+            mem_total = _f(parts[4]) or 1.0
+            gpus.append(GpuInfo(
+                index=idx,
+                name=parts[1],
+                util_percent=_f(parts[2]) or 0.0,
+                mem_used_mb=mem_used,
+                mem_total_mb=mem_total,
+                mem_percent=round(mem_used / mem_total * 100, 1),
+                temp_c=_f(parts[5]) if len(parts) > 5 else None,
+                power_w=_f(parts[6]) if len(parts) > 6 else None,
+                power_limit_w=_f(parts[7]) if len(parts) > 7 else None,
+            ))
+        return gpus
+    except Exception:
+        return []
+
+
+@router.get("/dashboard/system", response_model=SystemStatsResponse)
+async def dashboard_system():
+    """Return CPU, RAM, disk, network and per-GPU stats."""
+    try:
+        import psutil
+    except ImportError:
+        raise HTTPException(status_code=503, detail="psutil not installed — pip install psutil")
+
+    cpu_freq = psutil.cpu_freq()
+    ram = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+    disk = psutil.disk_usage("/")
+    net = psutil.net_io_counters()
+    try:
+        load = list(os.getloadavg())
+    except AttributeError:
+        load = [0.0, 0.0, 0.0]
+
+    return SystemStatsResponse(
+        cpu_percent=psutil.cpu_percent(interval=0.2),
+        cpu_count=psutil.cpu_count(logical=True),
+        cpu_freq_mhz=round(cpu_freq.current, 1) if cpu_freq else None,
+        ram_total_gb=round(ram.total / 1024**3, 2),
+        ram_used_gb=round(ram.used / 1024**3, 2),
+        ram_percent=ram.percent,
+        swap_total_gb=round(swap.total / 1024**3, 2),
+        swap_used_gb=round(swap.used / 1024**3, 2),
+        disk_total_gb=round(disk.total / 1024**3, 1),
+        disk_used_gb=round(disk.used / 1024**3, 1),
+        disk_percent=disk.percent,
+        net_sent_mb=round(net.bytes_sent / 1024**2, 1),
+        net_recv_mb=round(net.bytes_recv / 1024**2, 1),
+        load_avg=[round(x, 2) for x in load],
+        gpus=_collect_gpus(),
+    )

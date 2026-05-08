@@ -22,6 +22,9 @@ class OCRRequest(BaseModel):
 class SourceInfo(BaseModel):
     """Source chunk info in response."""
     issue_id: str
+    source_id: Optional[str] = None
+    source_type: Optional[str] = None
+    source_title: Optional[str] = None
     snippet: str
     url: str
     score: float
@@ -92,3 +95,33 @@ class WorkflowDiagramResponse(BaseModel):
 
     content: str
     last_modified_epoch_ms: int
+
+
+class GpuInfo(BaseModel):
+    index: int
+    name: str
+    util_percent: float
+    mem_used_mb: float
+    mem_total_mb: float
+    mem_percent: float
+    temp_c: Optional[float] = None
+    power_w: Optional[float] = None
+    power_limit_w: Optional[float] = None
+
+
+class SystemStatsResponse(BaseModel):
+    cpu_percent: float
+    cpu_count: int
+    cpu_freq_mhz: Optional[float] = None
+    ram_total_gb: float
+    ram_used_gb: float
+    ram_percent: float
+    swap_total_gb: float
+    swap_used_gb: float
+    disk_total_gb: float
+    disk_used_gb: float
+    disk_percent: float
+    net_sent_mb: float
+    net_recv_mb: float
+    load_avg: List[float]
+    gpus: List[GpuInfo]

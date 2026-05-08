@@ -87,23 +87,43 @@ class QdrantWrapper:
             [{"content_brief": str, "issue_id": str, "attachment_urls": [...], "score": float}, ...]
         """
         try:
-            query_kwargs = {
-                "collection_name": collection_name,
-                "query": query_vector,
-                "limit": limit,
-            }
-            if score_threshold is not None:
-                query_kwargs["score_threshold"] = score_threshold
-
-            results = self.client.query_points(**query_kwargs).points
+            if hasattr(self.client, "query_points"):
+                # qdrant-client >= 1.7.0
+                query_kwargs: dict = {
+                    "collection_name": collection_name,
+                    "query": query_vector,
+                    "limit": limit,
+                }
+                if score_threshold is not None:
+                    query_kwargs["score_threshold"] = score_threshold
+                results = self.client.query_points(**query_kwargs).points
+            else:
+                # qdrant-client < 1.7.0 fallback
+                search_kwargs: dict = {
+                    "collection_name": collection_name,
+                    "query_vector": query_vector,
+                    "limit": limit,
+                }
+                if score_threshold is not None:
+                    search_kwargs["score_threshold"] = score_threshold
+                results = self.client.search(**search_kwargs)
             
             chunks = []
             for result in results:
+                payload = result.payload or {}
+                source_id = payload.get("source_id") or payload.get("issue_id") or "unknown"
+                source_type = payload.get("source_type") or "faq"
                 chunks.append({
-                    "content_brief": result.payload.get("content_brief", ""),
-                    "issue_id": result.payload.get("issue_id", "unknown"),
-                    "attachment_urls": result.payload.get("attachment_urls", []),
-                    "source_url": result.payload.get("source_url", ""),
+                    "content_brief": payload.get("content_brief", ""),
+                    "content_full": payload.get("content_full", payload.get("content_brief", "")),
+                    "issue_id": payload.get("issue_id", source_id),
+                    "source_id": source_id,
+                    "source_type": source_type,
+                    "source_title": payload.get("source_title", ""),
+                    "section_path": payload.get("section_path", ""),
+                    "attachment_urls": payload.get("attachment_urls", []),
+                    "source_url": payload.get("source_url", ""),
+                    "image_ids": payload.get("image_ids", []),
                     "score": result.score
                 })
             
